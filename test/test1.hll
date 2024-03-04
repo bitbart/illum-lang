@@ -1,0 +1,15 @@
+contract Test1 {
+    int n; 
+    int m;
+
+    constructor() { }
+    
+    function add(int i, string op) { 
+        if (op==1) 
+            n=n+i; 
+        else { 
+            n=n-i; 
+            m=m+1;
+        } 
+    }
+}

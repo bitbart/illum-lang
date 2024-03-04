@@ -1,0 +1,37 @@
+contract PaymentSplitter {
+	mapping (address => uint) shares;
+	uint totalShares;
+    mapping (address => uint) released;
+	uint totalReleased; 
+    address owner;
+
+    constructor(address o) {
+	    shares = emptymap;
+	    released = emptymap;
+	    owner = o;
+	    totalShares = 0;
+	    totalReleased = 0;
+    } next(addShares)
+
+    function addShares(address p, uint s) auth(owner) {
+	    shares[p] += s;
+	    totalShares += s;
+    } next(addShares,finalizeShares)
+
+    function finalizeShares() auth(owner) {
+    } next(receive)
+
+    function receive(int v) input(v:T) {  
+    } next(receive,release)
+
+    function release(address a) { 
+        require(shares[a] > 0);
+        totalReceived = balance(T) + totalReleased;
+        payment = (totalReceived * shares[a]) / totalShares - released[a];
+        if (payment != 0) {
+        	totalReleased += payment;
+        	released[account] += payment;
+        	a.transfer(payment:T);
+	    }
+    } next(receive,release)
+}
