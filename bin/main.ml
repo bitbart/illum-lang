@@ -1,5 +1,6 @@
 open Illum.Prettyprint
 open Illum.Main
+open Illum.Nf
        
 (* read file, and output it to a string *)
 
@@ -20,6 +21,15 @@ let _ = match Array.length(Sys.argv) with
 (* parse / read input from file *) 
 | 3 when Sys.argv.(1)="parse" -> (match read_file Sys.argv.(2) with
       "" -> print_newline()
-    | s -> s |> parse |> string_of_contract |> print_endline)
+    | s -> s |> parse |> nf0 |> string_of_contractNF |> print_endline)
+(* check NF1 / read input from file *) 
+| 3 when Sys.argv.(1)="is_nf1" -> (match read_file Sys.argv.(2) with
+      "" -> print_newline()
+    | s -> s |> parse |> nf0 |> is_nf1 |> string_of_bool |> print_endline)
+(* converto to NF1 / read input from file *) 
+| 3 when Sys.argv.(1)="nf1" -> (match read_file Sys.argv.(2) with
+      "" -> print_newline()
+    | s -> s |> parse |> nf0 |> nf1 |> string_of_contractNF |> print_endline)
+
 (* wrong usage *)      
 | _ -> failwith "Usage: dune exec illum [parse] [filename]"

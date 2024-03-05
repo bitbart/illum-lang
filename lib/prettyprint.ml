@@ -99,15 +99,67 @@ let rec string_of_fun_decls = function
   EmptyFunDecls -> "" 
 | FunDeclSeq(fd,fds) -> (string_of_fun_decl fd) ^ "\n" ^ (string_of_fun_decls fds)
 
-(*
-let string_of_fun_decls = List.fold_left (fun s d -> s ^ (if s<>"" then "; " else "") ^ string_of_fun_decl d) ""
-*)
-
-let string_of_contract (Contract(c,vdl,fdl)) = "contract " ^ c ^ " { " ^ (string_of_var_decls vdl) ^ (string_of_fun_decls fdl) ^ " }"
+let string_of_contract (Contract(c,vdl,fdl)) = 
+  "contract " ^ c ^ " { " ^ (string_of_var_decls vdl) ^ (string_of_fun_decls fdl) ^ " }"
 
 
+(******************************************************************************)
+(*                        Pretty-printing of NF0 contracts                    *)
+(******************************************************************************)
+
+let rec string_of_cmdNF1 t = function
+  | SkipNF -> tabs t "skip;"
+  | VarAssignNF(x,e) -> tabs t (x ^ "=" ^ string_of_expr e ^ ";")
+  | MapAssignNF(x,e1,e2) -> tabs t (x ^ "[" ^ string_of_expr e1 ^ "]" ^ "=" ^ string_of_expr e2 ^ ";")
+  | SendNF(x,e,tok) -> tabs t (x ^ ".transfer(" ^ (string_of_expr e) ^ ":" ^ tok ^ ");")
+  | ReqNF(e) -> tabs t ("require " ^ string_of_expr e ^ ";")
+  | IfNF [] -> failwith "should never happen"
+  | IfNF [(e,c1)] -> 
+    tabs t "if (" ^ string_of_expr e ^ ") {\n" ^ 
+      (string_of_cmdNF (t+1) c1) ^ 
+    "\n" ^ tabs t "}"
+  | IfNF [(e1,c1);(True,[])] -> 
+    tabs t "if (" ^ string_of_expr e1 ^ ") {\n" ^ 
+      (string_of_cmdNF (t+1) c1) ^ 
+    "\n" ^ tabs t "}" ^
+    "\n" ^ tabs t "else { }\n"
+  | IfNF [(e1,c1);(True,c2)] -> 
+    tabs t "if (" ^ string_of_expr e1 ^ ") {\n" ^ 
+      (string_of_cmdNF (t+1) c1) ^ 
+    "\n" ^ tabs t "}" ^
+    "\n" ^ tabs t "else {\n" ^ 
+      (string_of_cmdNF (t+1) c2 ^ 
+    "\n" ^ tabs t "}")
+  | IfNF ((e1,c1)::l) -> let s = string_of_cmdNF1 t (IfNF l) in
+    tabs t "if (" ^ string_of_expr e1 ^ ") {\n" ^ 
+      (string_of_cmdNF (t+1) c1) ^ 
+    "\n" ^ tabs t "}" ^
+    "\n" ^ tabs t "else " ^ 
+    s
+
+and string_of_cmdNF t cl = List.fold_left (fun s c -> s ^ (if s<>"" then "\n" else "") ^ (string_of_cmdNF1 t c)) "" cl
+  
+let string_of_fun_declNF = function
+  | ConstrNF(a,fml,c,nl) -> 
+    "\n" ^ tabs 1 ("constructor" ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmods fml) ^ " {\n") ^ 
+      (if c=[] then "" else (string_of_cmdNF 2 c) ^ "\n") ^ 
+    tabs 1 "}" ^ (string_of_nexts nl)                
+  | ProcNF(f,a,fml,c,nl) -> 
+    "\n" ^ tabs 1 ("function " ^ f ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmods fml) ^ " {\n") ^ 
+      (if c=[] then "" else (string_of_cmdNF 2 c) ^ "\n") ^
+    tabs 1 "}" ^ (string_of_nexts nl)
+
+let rec string_of_fun_declsNF = function
+  | EmptyFunDeclsNF -> ""
+  | FunDeclSeqNF(f,fl) -> (string_of_fun_declNF f) ^ "\n" ^ (string_of_fun_declsNF fl)
+
+let string_of_contractNF = function ContractNF(c,vdl,fdl) -> 
+  "contract " ^ c ^ " { " ^ (string_of_var_decls vdl) ^ (string_of_fun_declsNF fdl) ^ " }"
 
 
+(******************************************************************************)
+(*                        Pretty-printing HeLLUM semantics                    *)
+(******************************************************************************)
 
 let string_of_env1 s x = match topenv s x with
   | IVar l -> string_of_int l ^ "/" ^ x

@@ -4,12 +4,16 @@ contract Test1 {
 
     constructor() { }
     
-    function add(int i, string op) { 
-        if (op==1) 
-            n=n+i; 
-        else { 
-            n=n-i; 
-            m=m+1;
-        } 
+    function g(address a) {
+        require (n==0); 
+        n += 1;
+        a.transfer(1:T);
+    }
+    function f(address a) { 
+        a.transfer(1:T);
+        if (n == 0)
+            n = balance(T);
+        else
+            n = balance(T2); 
     }
 }

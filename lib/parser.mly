@@ -93,17 +93,18 @@ cmd1:
   | x = ID; LBRACKET; e1 = expr; RBRACKET; TAKES; e2=expr; CMDSEP; { MapAssign(x,e1,e2) }
   | x = ID; LBRACKET; e1 = expr; RBRACKET; PLUSTAKES; e2=expr; CMDSEP; { MapAssign(x,e1,Add(Map(x,e1),e2)) }
   | x = ID; SENDSEP; SEND; LPAREN; e=expr; TOKSEP; t = ID; RPAREN; CMDSEP; { Send(x,e,t) }
-
-cmd:
-  | c = cmd1; { c }
-  | c1 = cmd1; c2 = cmd; { Seq(c1,c2) }
-  | c1 = cmd; c2 = cmd; { Seq(c1,c2) }
   | IF; LPAREN; e = expr; RPAREN; c1 = cmd1; { If(e,c1,Skip) }
   | IF; LPAREN; e = expr; RPAREN; LBRACE; c1 = cmd; RBRACE; { If(e,c1,Skip) }
   | IF; LPAREN; e = expr; RPAREN; c1 = cmd1; ELSE; c2 = cmd1; { If(e,c1,c2) }
   | IF; LPAREN; e = expr; RPAREN; c1 = cmd1; ELSE; LBRACE; c2 = cmd; RBRACE; { If(e,c1,c2) }
   | IF; LPAREN; e = expr; RPAREN; LBRACE; c1 = cmd; RBRACE; ELSE; c2 = cmd1; { If(e,c1,c2) }
   | IF; LPAREN; e = expr; RPAREN; LBRACE; c1 = cmd; RBRACE; ELSE; LBRACE; c2 = cmd; RBRACE; { If(e,c1,c2) }
+;
+
+cmd:
+  | c = cmd1; { c }
+  | c1 = cmd1; c2 = cmd; { Seq(c1,c2) }
+  | c1 = cmd; c2 = cmd; { Seq(c1,c2) }
 ;
 
 btype:

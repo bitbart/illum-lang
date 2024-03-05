@@ -60,3 +60,25 @@ type var_decls = EmptyVarDecls | VarDeclSeq of var_decl * var_decls
 type fun_decls = EmptyFunDecls | FunDeclSeq of fun_decl * fun_decls
 
 type contract = Contract of ide * var_decls * fun_decls
+
+
+(******************************************************************************)
+(*                          NF0: lists for seq and if branches                *)
+(******************************************************************************)
+
+type cmdNF1 = 
+| SkipNF
+| VarAssignNF of string * expr
+| MapAssignNF of string * expr * expr
+| SendNF of ide * expr * tok
+| ReqNF of expr
+| IfNF of (expr * cmdNF) list
+and cmdNF = cmdNF1 list
+
+type fun_declNF =
+  | ConstrNF of args * fmods * cmdNF * (ide list)
+  | ProcNF of ide * args * fmods * cmdNF * (ide list)           
+
+type fun_declsNF = EmptyFunDeclsNF | FunDeclSeqNF of fun_declNF * fun_declsNF
+
+type contractNF = ContractNF of ide * var_decls * fun_declsNF

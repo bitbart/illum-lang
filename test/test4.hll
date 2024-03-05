@@ -1,0 +1,44 @@
+contract Test4 {
+    int n; 
+    
+    function f(address a) {
+        a.transfer(5:T); 
+        n = n+1;
+        if (balance(T)>n)
+            a.transfer(1:T);
+        else if (n==1) {
+            skip;
+        }
+        else {
+            n = 2;
+            a.transfer(1:T);
+        }
+        n = 0;
+        m = n;
+    }
+
+    function g() {
+        if (n==0) {
+            n = n+1;
+            if (n==1) {
+                n = 2;
+            }
+            else {
+                n = 3;
+            }
+        }
+        else
+            n = 4;
+    }
+
+    function h() {
+        if (n==0) {
+            if (n==1) {
+                n=2;
+            }
+            else {
+                n=3;
+            }
+        }
+    }
+}

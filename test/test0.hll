@@ -1,0 +1,48 @@
+contract Test0 {
+    int n; 
+    int m;
+
+    constructor() { }
+    
+    // NF1
+    function f(address a) { 
+        if (n == 0)
+            a.transfer(1:T);
+        else {
+            n = 2;
+            a.transfer(1:T);
+        }
+    }
+    
+    // NF1
+    function g(address a, uint n) { 
+        if (n == 0) {
+            a.transfer(1:T);
+        }
+        else if (n == 1) {
+            n = 2;
+            a.transfer(1:T);
+        }
+        else 
+            n = 3;
+    }
+
+    // NF1
+    function h(address a, uint n) { 
+        if (n == 0) {
+            a.transfer(1:T);
+            // if (n==4) { skip; }
+            n = 5;
+        }
+        else if (n == 1) {
+            // if (n==4) { skip; }
+            n = 2;
+            a.transfer(1:T);
+        }
+        else if (n==5) {
+            n = 3;
+            a.transfer(1:T);
+        }
+    }
+
+}
