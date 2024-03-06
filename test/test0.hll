@@ -5,7 +5,8 @@ contract Test0 {
     constructor() { }
     
     // NF1
-    function f(address a) { 
+    function f(address a) {
+        require(n<5); 
         if (n == 0)
             a.transfer(1:T);
         else {
@@ -15,7 +16,8 @@ contract Test0 {
     }
     
     // NF1
-    function g(address a, uint n) { 
+    function g(address a, uint n) {
+        require (true);
         if (n == 0) {
             a.transfer(1:T);
         }

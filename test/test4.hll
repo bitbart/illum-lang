@@ -30,15 +30,4 @@ contract Test4 {
         else
             n = 4;
     }
-
-    function h() {
-        if (n==0) {
-            if (n==1) {
-                n=2;
-            }
-            else {
-                n=3;
-            }
-        }
-    }
 }

@@ -15,19 +15,20 @@ let rec string_of_expr = function
   | AddrConst n -> "address(" ^ string_of_int n ^ ")"
   | StringConst s -> "\"" ^ s ^ "\""
   | Not e -> "! " ^ string_of_expr e
-  | And(e1,e2) -> string_of_expr e1 ^ " && " ^ string_of_expr e2
-  | Or(e1,e2) -> string_of_expr e1 ^ " || " ^ string_of_expr e2
-  | Add(e1,e2) -> string_of_expr e1 ^ "+" ^ string_of_expr e2
-  | Sub(e1,e2) -> string_of_expr e1 ^ "-" ^ string_of_expr e2
-  | Mul(e1,e2) -> string_of_expr e1 ^ "*" ^ string_of_expr e2
-  | Div(e1,e2) -> string_of_expr e1 ^ "/" ^ string_of_expr e2
-  | Eq(e1,e2) -> string_of_expr e1 ^ "==" ^ string_of_expr e2
-  | Neq(e1,e2) -> string_of_expr e1 ^ "!=" ^ string_of_expr e2
-  | Leq(e1,e2) -> string_of_expr e1 ^ "<=" ^ string_of_expr e2
-  | Le(e1,e2) -> string_of_expr e1 ^ "<" ^ string_of_expr e2                    
-  | Geq(e1,e2) -> string_of_expr e1 ^ ">=" ^ string_of_expr e2
-  | Ge(e1,e2) -> string_of_expr e1 ^ ">" ^ string_of_expr e2
-  | Bal(t) -> "balance(" ^ t ^ ")"                   
+  | And(e1,e2) -> "(" ^ string_of_expr e1 ^ " && " ^ string_of_expr e2 ^ ")"
+  | Or(e1,e2) -> "(" ^ string_of_expr e1 ^ " || " ^ string_of_expr e2 ^ ")"
+  | Add(e1,e2) -> "(" ^ string_of_expr e1 ^ "+" ^ string_of_expr e2 ^ ")"
+  | Sub(e1,e2) -> "(" ^ string_of_expr e1 ^ "-" ^ string_of_expr e2 ^ ")"
+  | Mul(e1,e2) -> "(" ^ string_of_expr e1 ^ "*" ^ string_of_expr e2 ^ ")"
+  | Div(e1,e2) -> "(" ^ string_of_expr e1 ^ "/" ^ string_of_expr e2 ^ ")"
+  | Eq(e1,e2) -> "(" ^ string_of_expr e1 ^ "==" ^ string_of_expr e2 ^ ")"
+  | Neq(e1,e2) -> "(" ^ string_of_expr e1 ^ "!=" ^ string_of_expr e2 ^ ")"
+  | Leq(e1,e2) -> "(" ^ string_of_expr e1 ^ "<=" ^ string_of_expr e2 ^ ")"
+  | Le(e1,e2) -> "(" ^ string_of_expr e1 ^ "<" ^ string_of_expr e2 ^ ")"
+  | Geq(e1,e2) -> "(" ^ string_of_expr e1 ^ ">=" ^ string_of_expr e2 ^ ")"
+  | Ge(e1,e2) -> "(" ^ string_of_expr e1 ^ ">" ^ string_of_expr e2 ^ ")"
+  | Bal(t) -> "balance(" ^ t ^ ")"  
+  | IfE(e1,e2,e3) -> "(" ^ string_of_expr e1 ^ " ? " ^ string_of_expr e2 ^ " : " ^ string_of_expr e3 ^ ")"
 
 and string_of_cmd t = function
     Skip -> tabs t "skip;"
@@ -130,7 +131,7 @@ let rec string_of_cmdNF1 t = function
     "\n" ^ tabs t "else {\n" ^ 
       (string_of_cmdNF (t+1) c2 ^ 
     "\n" ^ tabs t "}")
-  | IfNF ((e1,c1)::l) -> let s = string_of_cmdNF1 t (IfNF l) in
+  | IfNF ((e1,c1)::bl) -> let s = string_of_cmdNF1 t (IfNF bl) in
     tabs t "if (" ^ string_of_expr e1 ^ ") {\n" ^ 
       (string_of_cmdNF (t+1) c1) ^ 
     "\n" ^ tabs t "}" ^
@@ -217,7 +218,8 @@ let rec vars_of_expr = function
   | Le(e1,e2)
   | Geq(e1,e2) 
   | Ge(e1,e2) -> union (vars_of_expr e1) (vars_of_expr e2)
-  | Bal(_) -> []                    
+  | Bal(_) -> []
+  | IfE(e1,e2,e3) -> union (vars_of_expr e1) (union (vars_of_expr e2) (vars_of_expr e3))  
 
 and vars_of_cmd = function
     Skip -> []

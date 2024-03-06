@@ -23,7 +23,8 @@ type expr =
   | Le of expr * expr           
   | Geq of expr * expr
   | Ge of expr * expr 
-  | Bal of tok         
+  | Bal of tok
+  | IfE of expr * expr * expr (* ternary operator *)       
               
 and cmd =
   | Skip

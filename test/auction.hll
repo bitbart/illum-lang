@@ -10,18 +10,18 @@ contract Auction {
         A = owner;
         W = address(0);
     }
-
+    
     function bid(uint v, address X) input(v:T) {
         require(X!=address(0) && v>=m && v>balance(T));
         if (W!=address(0))
             W.transfer((balance(T)-v):T);
         W = X;
     }
-
+        
     function close() 
         auth(A) 
         after(t) 
     {
         A.transfer(balance(T):T);
-    } 
+    }
 }
