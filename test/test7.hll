@@ -1,0 +1,12 @@
+contract Test7 {    
+    function f() {
+        if (n==1) { 
+            n = n+1; 
+            require(n==2);
+        }
+        n = m+2;
+        a.transfer(1:T);
+        require(n==5);
+        require(balance(T)>4);
+    }
+}

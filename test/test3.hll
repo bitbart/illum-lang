@@ -1,0 +1,6 @@
+contract Test3 {    
+    function f() {
+        require(true); 
+        if (n==1) n = n+1;
+    }
+}

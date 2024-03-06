@@ -1,0 +1,18 @@
+contract Test8 {                    
+
+  function f() {
+    if (n==1) {
+      require n==2;
+      n=n+1;
+      a.transfer(1:T);
+    }
+    else if (n==2) {
+      require(m<7);
+    }
+    else {
+      require balance(T)>4;
+      m=n+3;
+      a.transfer(1:T);
+    }
+  }
+ }
