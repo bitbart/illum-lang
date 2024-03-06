@@ -36,9 +36,9 @@ let is_nf1_cmd1 = function
 | IfNF(_) -> false
 | _ -> true
 
-let rec is_nf1_cmd = function
-| [IfNF(ifl)] -> List.fold_left (fun b (_,c) -> b && is_nf1_cmd c) true ifl
-| l -> List.for_all is_nf1_cmd1 l
+let is_nf1_cmd = function
+| [IfNF bl] -> List.fold_left (fun b (_,c) -> b && (List.for_all is_nf1_cmd1 c)) true bl
+| cl -> List.for_all is_nf1_cmd1 cl
 
 let is_nf1_fun = function
   | ConstrNF(_,_,c,_) 
@@ -112,8 +112,9 @@ let rec nf1_cmd = function
 | [IfNF bl] -> bl 
   |> List.map (fun (ei,ci) -> (ei,nf1_cmd ci)) 
   |> List.map (fun (ei,ci) -> match ci with 
-    | [IfNF bl'] -> [ List.map (fun (ei',ci') -> (And(ei,ei'),ci')) bl' ]
-    | _ -> (ei,ci)) (* manca il flatten! *)
+    | [IfNF bl'] -> List.map (fun (ei',ci') -> (And(ei,ei'),ci')) bl'
+    | _ -> [(ei,ci)])
+  |> List.flatten
   |> fun bl1 -> [IfNF bl1] 
 | VarAssignNF(x,e)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_assign_if (VarAssignNF(x,e), IfNF(bl)))::cl)
 | SendNF(x,e,t)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_send_if (SendNF(x,e,t), IfNF(bl)))::cl)

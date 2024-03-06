@@ -1,0 +1,18 @@
+contract Test5 {
+    int n; 
+    
+    function h() {
+        if (n==0) {
+            if (n==1) {
+                n=2;
+            }
+            else {
+                n=3;
+            }
+        }
+        else if (n<4) {
+            n=7;
+        }
+        else n=8;
+    }
+}
