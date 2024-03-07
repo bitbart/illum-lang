@@ -121,7 +121,7 @@ let rec list_of_fun_decls = function
 let is_nf1 = function
   ContractNF(_,_,fdl) -> List.for_all is_nf1_fun (list_of_fun_decls fdl)
 
-
+(* subst_var x e e' replaces all the occurrences of base variable x in e' with e *)
 let rec subst_var x e = function
 | True -> True
 | False -> False
@@ -148,6 +148,7 @@ let rec subst_var x e = function
 | BalPre(t) -> BalPre(t)
 | IfE(e1,e2,e3) -> IfE(subst_var x e e1,subst_var x e e2,subst_var x e e3)
 
+(* subst_map x e e' e'' replaces all the occurrences of map variable x[e] in e'' with ternary operator *)
 let rec subst_map x e e' = function
 | True -> True
 | False -> False
@@ -174,23 +175,24 @@ let rec subst_map x e e' = function
 | BalPre(t) -> BalPre(t)
 | IfE(e1,e2,e3) -> IfE(subst_map x e e' e1,subst_map x e e' e2,subst_map x e e' e3)
 
-let rec subst_bal x (e:expr) t = function
-| Bal(t') when t'=t -> Sub(Bal(t),e)
-| Bal(t') -> Bal(t')                  
-| Map(y,e') -> Map(y,subst_bal x e t e')
-| Not e1 -> Not (subst_bal x e t e1)
-| And(e1,e2) -> And(subst_bal x e t e1,subst_bal x e t e2)
-| Or(e1,e2) -> Or(subst_bal x e t e1,subst_bal x e t e2)
-| Add(e1,e2) -> Add(subst_bal x e t e1,subst_bal x e t e2)
-| Sub(e1,e2) -> Sub(subst_bal x e t e1,subst_bal x e t e2)
-| Mul(e1,e2) -> Mul(subst_bal x e t e1,subst_bal x e t e2)
-| Div(e1,e2) -> Div(subst_bal x e t e1,subst_bal x e t e2)
-| Eq(e1,e2) -> Eq(subst_bal x e t e1,subst_bal x e t e2)
-| Neq(e1,e2) -> Neq(subst_bal x e t e1,subst_bal x e t e2)
-| Leq(e1,e2) -> Leq(subst_bal x e t e1,subst_bal x e t e2)
-| Le(e1,e2) -> Le(subst_bal x e t e1,subst_bal x e t e2) 
-| Geq(e1,e2) -> Geq(subst_bal x e t e1,subst_bal x e t e2)
-| Ge(e1,e2) -> Ge(subst_bal x e t e1,subst_bal x e t e2)
+(* subst_bal t e e' replaces all the occurrences of Bal(t) in e' with e *)
+let rec subst_bal t (e:expr) = function
+| Bal(t') when t'=t -> e
+| Bal(t')    -> Bal(t')                  
+| Map(y,e')  -> Map(y,subst_bal t e e')
+| Not e1     -> Not(subst_bal t e e1)
+| And(e1,e2) -> And(subst_bal t e e1,subst_bal t e e2)
+| Or(e1,e2)  -> Or (subst_bal t e e1,subst_bal t e e2)
+| Add(e1,e2) -> Add(subst_bal t e e1,subst_bal t e e2)
+| Sub(e1,e2) -> Sub(subst_bal t e e1,subst_bal t e e2)
+| Mul(e1,e2) -> Mul(subst_bal t e e1,subst_bal t e e2)
+| Div(e1,e2) -> Div(subst_bal t e e1,subst_bal t e e2)
+| Eq(e1,e2)  -> Eq (subst_bal t e e1,subst_bal t e e2)
+| Neq(e1,e2) -> Neq(subst_bal t e e1,subst_bal t e e2)
+| Leq(e1,e2) -> Leq(subst_bal t e e1,subst_bal t e e2)
+| Le(e1,e2)  -> Le (subst_bal t e e1,subst_bal t e e2) 
+| Geq(e1,e2) -> Geq(subst_bal t e e1,subst_bal t e e2)
+| Ge(e1,e2)  -> Ge (subst_bal t e e1,subst_bal t e e2)
 | e -> e
 
 let nf1_push_assign_if = function
@@ -199,7 +201,7 @@ let nf1_push_assign_if = function
 | _ -> failwith "nf1_push_assign_if"
 
 let nf1_push_send_if = function
-| (SendNF(a,e,t), IfNF(bl)) -> IfNF(List.map (fun (ei,ci) -> (subst_bal a e t ei,SendNF(a,e,t)::ci)) bl)
+| (SendNF(a,e,t), IfNF(bl)) -> IfNF(List.map (fun (ei,ci) -> (subst_bal t (Sub(Bal(t),e)) ei,SendNF(a,e,t)::ci)) bl)
 | _ -> failwith "nf1_push_assign_if"
 
 let nf1_push_if_cmd = function
@@ -212,7 +214,7 @@ let nf1_pull_assign_req = function
 | _ -> failwith "nf1_pull_assign_req"
 
 let nf1_pull_send_req = function
-| (SendNF(a,e,t),ReqNF(er)) -> [ReqNF(subst_bal a e t er); SendNF(a,e,t)]
+| (SendNF(a,e,t),ReqNF(er)) -> [ReqNF(subst_bal t (Sub(Bal(t),e)) er); SendNF(a,e,t)]
 | _ -> failwith "nf1_pull_send_req"
 
 (* merges the branch conditions with the req conditions *)
@@ -274,8 +276,44 @@ let simassign_init xl tl =
     (List.map2 (fun y x -> (y,BalPre x)) tl0 tl)
   )
 
+(* ssa_var st x generates a variable identifier for variable x in SSA state st *)
+let ssa_var st x = x ^ "_" ^ (string_of_int (st x))
+
+(* ssa_inc st x increases the index of the SSA variable x in SSA state st *)
+let ssa_inc st x = fun y -> if x=y then st x + 1 else st y
+
+let ssa_rw_expr st e = 
+  let (xl,tl) = (vars_of_expr e, toks_of_expr e) in
+  (* replaces the variables in e with SSA variables *)
+  let e1 = List.fold_left (fun e' x -> subst_var x (Var (ssa_var st x)) e') e xl in
+  (* replaces the balance(T) subexpr in e with SSA variables *)
+  List.fold_left (fun e' t -> subst_bal t (Var (ssa_var st t)) e') e1 tl
+
+let ssa_rw_cmd1 st = function
+| VarAssignNF(x,e) -> let st' = ssa_inc st x in ([VarAssignNF(ssa_var st' x, ssa_rw_expr st e)], st')
+| MapAssignNF(x,e1,e2) -> let _ = (MapAssignNF(ssa_var st x,e1,e2), st) in failwith "ssa_rw_cmd1: MapAssign not implemented"
+| SendNF(x,e,t) -> let st' = ssa_inc st t in 
+  let e' = Sub(Bal(t),e) in
+  (
+    [
+    SendNF(ssa_var st x,ssa_rw_expr st e,t);
+    VarAssignNF(ssa_var st' t, ssa_rw_expr st e')
+    ], 
+    st'
+  )
+| _ -> failwith "ssa_rw_cmd1: should not happen"
+
 let nf2_cmd xl tl = function
-| _ -> [simassign_init xl tl]
+| [] -> []
+| [IfNF bl] -> let c0 = simassign_init xl tl in
+  bl 
+  |> List.map (fun (ei,ci) -> (ei,ci))
+  |> fun y -> [c0 ; IfNF y]
+  (* TODO: complete case IfNF *)
+| cl -> let c0 = simassign_init xl tl in
+  let st0 = fun _ -> 0 in
+  let (cl',_) = List.fold_left (fun (l,st) c -> let (cl',st') = ssa_rw_cmd1 st c in (l@cl', st')) ([],st0) cl in 
+  c0::cl'
 
 let nf2_fun xl = function
   | ConstrNF(a,fml,c,nl) -> ConstrNF(a,fml,nf2_cmd xl (toks_of_cmd c) c,nl) 
