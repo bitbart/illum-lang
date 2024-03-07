@@ -122,8 +122,8 @@ arg:
 ;
 
 var_decl:
-  | t = btype; x = ID { Var(t,x) }
-  | TMAPPING; LPAREN; t1 = btype; ARROW; t2 = btype; RPAREN; x = ID; { Mapping(t1,t2,x) }
+  | t = btype; x = ID { VarDecl(t,x) }
+  | TMAPPING; LPAREN; t1 = btype; ARROW; t2 = btype; RPAREN; x = ID; { MapDecl(t1,t2,x) }
 ;
 
 var_decls:

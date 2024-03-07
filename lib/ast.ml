@@ -24,8 +24,9 @@ type expr =
   | Geq of expr * expr
   | Ge of expr * expr 
   | Bal of tok
-  | IfE of expr * expr * expr (* ternary operator *)       
-              
+  | IfE of expr * expr * expr (* ternary operator *)
+  | BalPre of tok (* balance of T before the call *)       
+
 and cmd =
   | Skip
   | VarAssign of string * expr
@@ -49,8 +50,8 @@ type fmod =
 and fmods = EmptyFMods | FModSeq of fmod * fmods 
 
 type var_decl =
-  | Var of btype * ide
-  | Mapping of btype * btype * ide
+  | VarDecl of btype * ide
+  | MapDecl of btype * btype * ide
 
 and fun_decl =
   | Constr of args * fmods * cmd * (ide list)
@@ -74,6 +75,7 @@ type cmdNF1 =
 | SendNF of ide * expr * tok
 | ReqNF of expr
 | IfNF of (expr * cmdNF) list
+| SimAssign of (string * expr) list (* simultaneous assignment - non produced by the parser *)
 and cmdNF = cmdNF1 list
 
 type fun_declNF =

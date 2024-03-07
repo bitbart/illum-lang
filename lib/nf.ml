@@ -1,4 +1,5 @@
 open Ast
+open Utils
 
 (******************************************************************************)
 (*                          NF0: lists for seq and if branches                *)
@@ -87,13 +88,12 @@ let rec simplify_expr = function
   | IntConst n1,IntConst n2 -> if n1>n2 then True else False
   | e1',e2' -> Ge(e1',e2'))
 | Bal(t) -> Bal(t)
+| BalPre(t) -> BalPre(t)
 | IfE(e1,e2,e3) -> (match simplify_expr e1 with
   | True -> simplify_expr e2
   | False -> simplify_expr e3
   | e1' -> IfE(e1',simplify_expr e2,simplify_expr e3))
 
-(******************************************************************************)
-(*                                NF1: no nested if-then-else                  *)
 
 (******************************************************************************)
 (*                            NF1: no nested if-then-else                     *)
@@ -145,6 +145,7 @@ let rec subst_var x e = function
 | Geq(e1,e2) -> Geq(subst_var x e e1,subst_var x e e2)
 | Ge(e1,e2) -> Ge(subst_var x e e1,subst_var x e e2)
 | Bal(t) -> Bal(t)
+| BalPre(t) -> BalPre(t)
 | IfE(e1,e2,e3) -> IfE(subst_var x e e1,subst_var x e e2,subst_var x e e3)
 
 let rec subst_map x e e' = function
@@ -170,6 +171,7 @@ let rec subst_map x e e' = function
 | Geq(e1,e2) -> Geq(subst_map x e e' e1,subst_map x e e' e2)
 | Ge(e1,e2)  -> Ge (subst_map x e e' e1,subst_map x e e' e2)
 | Bal(t) -> Bal(t)
+| BalPre(t) -> BalPre(t)
 | IfE(e1,e2,e3) -> IfE(subst_map x e e' e1,subst_map x e e' e2,subst_map x e e' e3)
 
 let rec subst_bal x (e:expr) t = function
@@ -255,3 +257,33 @@ let rec nf1_fun_decls = function
 
 let nf1 = function
   ContractNF(x,vl,fdl) -> ContractNF(x,vl,nf1_fun_decls fdl)
+
+(******************************************************************************)
+(*                                       NF2: SSA                             *)
+(******************************************************************************)
+
+(* ssavars i xl decorates the state variables xl with the index i *)
+(* Warning: this is potentially unsafe, e.g. if the contract state includes x and x_0 *)
+
+let ssavars i xl = List.fold_right (fun x xl' -> (x ^ "_" ^ (string_of_int i))::xl') xl [] 
+
+let simassign_init xl tl =
+  let xl0,tl0 = (ssavars 0 xl,ssavars 0 tl) in
+  SimAssign(
+    (List.map2 (fun y x -> (y,Var x)) xl0 xl) @
+    (List.map2 (fun y x -> (y,BalPre x)) tl0 tl)
+  )
+
+let nf2_cmd xl tl = function
+| _ -> [simassign_init xl tl]
+
+let nf2_fun xl = function
+  | ConstrNF(a,fml,c,nl) -> ConstrNF(a,fml,nf2_cmd xl (toks_of_cmd c) c,nl) 
+  | ProcNF(f,a,fml,c,nl) -> ProcNF(f,a,fml,nf2_cmd xl (toks_of_cmd c) c,nl)
+
+let rec nf2_fun_decls xl = function
+| EmptyFunDeclsNF -> EmptyFunDeclsNF
+| FunDeclSeqNF(f,fl) -> FunDeclSeqNF(nf2_fun xl f,nf2_fun_decls xl fl)
+
+let nf2 = function ContractNF(x,vl,fdl) -> 
+  ContractNF(x,vl,nf2_fun_decls (vars_of_var_decls vl) fdl)

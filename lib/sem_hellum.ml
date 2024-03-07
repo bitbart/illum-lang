@@ -5,11 +5,6 @@ let apply st x = match topenv st x with
     IVar l -> getmem st l
   | _ -> failwith "apply error"
 
-let parse (s : string) : contract =
-  let lexbuf = Lexing.from_string s in
-  let ast = Parser.contract Lexer.read_token lexbuf in
-  ast
-
 exception TypeError of string
 exception UnboundVar of string
 exception PredOfZero
