@@ -26,11 +26,17 @@ type expr =
   | Bal of tok
   | IfE of expr * expr * expr (* ternary operator *)
   | BalPre of tok (* balance of T before the call *)       
+  | MapUpdate of expr * expr * expr   (* e1[e2 -> e3] map update*)
+  | MapAccess of expr * expr          (* e1[e2] *)
 
-and cmd =
+(******************************************************************************)
+(*                                     HeLLUM AST                             *)
+(******************************************************************************)
+
+type cmd =
   | Skip
-  | VarAssign of string * expr
-  | MapAssign of string * expr * expr
+  | VarAssign of ide * expr
+  | MapAssign of ide * expr * expr   (* equivalent to VarAssign(ide, MapUpdate(Var(ide),e1,e2)) *)
   | Seq of cmd * cmd
   | Send of ide * expr * tok
   | If of expr * cmd * cmd
@@ -70,12 +76,13 @@ type contract = Contract of ide * var_decls * fun_decls
 
 type cmdNF1 = 
 | SkipNF
-| VarAssignNF of string * expr
-| MapAssignNF of string * expr * expr
+| VarAssignNF of ide * expr
+| MapAssignNF of ide * expr * expr
 | SendNF of ide * expr * tok
 | ReqNF of expr
 | IfNF of (expr * cmdNF) list
-| SimAssign of (string * expr) list (* simultaneous assignment - non produced by the parser *)
+(* problema: in SimAssign mancano le mappe! *)
+| SimAssign of (ide * expr) list (* simultaneous assignment - non produced by the parser *)
 and cmdNF = cmdNF1 list
 
 type fun_declNF =
@@ -85,3 +92,29 @@ type fun_declNF =
 type fun_declsNF = EmptyFunDeclsNF | FunDeclSeqNF of fun_declNF * fun_declsNF
 
 type contractNF = ContractNF of ide * var_decls * fun_declsNF
+
+
+(******************************************************************************)
+(*                                     ILLUM AST                              *)
+(******************************************************************************)
+
+type decorators = { 
+  auth: ide list;
+  afterAbs: expr list;
+  afterRel: expr list 
+}
+
+type contrD = 
+| Call of (ide * expr list) list    (* call X(e1,...;?) | Y(...) | ... *)
+| Send of expr * tok * ide          (* send(e:T -> a) *)
+
+and contrC = (decorators * contrD) list
+
+and clause = {
+  name: ide;               (* X = clause name *)
+  spar: ide list;          (* alpha = static parameters *)
+  dpar: ide list;          (* beta = dynamic parameters *)
+  walp: (expr * tok) list; (* (e:T, ...) = wallet in the funding precondition *)
+  prep: expr;              (* p = boolean precondition *) 
+  cntr: contrC             (* contract code *)
+}

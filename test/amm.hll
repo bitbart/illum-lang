@@ -1,7 +1,7 @@
 contract AMM  {
 
 	constructor(uint x0, uint x1) input(x0:T0,x1:T1) {
-        require(x0 > 0 && x1>0);
+        require(x0>0 && x1>0);
 	} 
 
     function addliq(uint x0, uint x1) input(x0:T0,x1:T1) { 

@@ -41,7 +41,7 @@ open Ast
 %left OR
 %left AND
 %nonassoc NOT
-%left EQ NEQ LEQ
+%left LE GE EQ NEQ LEQ GEQ
 %left PLUS MINUS
 %left MUL DIV
 

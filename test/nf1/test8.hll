@@ -1,6 +1,9 @@
 contract Test8 {                    
-
   function f() {
+
+    // require (((false || ((n==1) && (n==2))) || (!(n==1) && (n==2) && (m<7))) || (!(n==1) && !(n==2) && (balance(T)-1>4)));
+
+    a.transfer(1:T);
     if (n==1) {
       require n==2;
       n=n+1;

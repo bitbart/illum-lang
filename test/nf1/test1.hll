@@ -11,7 +11,7 @@ contract Test1 {
     }
     function f(address a) { 
         a.transfer(1:T);
-        if (n == 0)
+        if (balance(T) == 0)
             n = balance(T);
         else
             n = balance(T2); 

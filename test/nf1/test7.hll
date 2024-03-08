@@ -1,12 +1,22 @@
 contract Test7 {    
     function f() {
         if (n==1) { 
-            n = n+1; 
-            require(n==2);
+            n = 20;
         }
-        n = m+2;
-        a.transfer(1:T);
-        require(n==5);
-        require(balance(T)>4);
+        require (n < 5);
+
+        // (G && req') || (!G && req)
+        // (G && req') || req
+    }
+
+    function g() {
+        // require (n<20 && 1000<500) || (!(n<20) && n<10 && 15<500) || (!(n<20) && !(n<10) && n<500) 
+        if (n<20) {
+            n = 1000;
+        }
+        else if (n<10) {
+            n = 15;
+        }
+        require (n<500);
     }
 }

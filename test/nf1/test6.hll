@@ -1,19 +1,12 @@
-contract Test6 {
-    int n; 
-    
-    function h() {
-        if (n==0) {
-            n = n+1;
-            if (n==1) {
-                n=2;
-            }
-            else {
-                n=3;
-            }
+contract Test6 {    
+    function f() {
+        if (n==1) { 
+            n = n+1; 
+            require(n==2);
         }
-        if (n<4) {
-            n=7;
-        }
-        else n=8;
+        n = m+2;
+        a.transfer(1:T);
+        require(n==5);
+        require(balance(T)>4);
     }
 }

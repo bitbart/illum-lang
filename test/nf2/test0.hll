@@ -8,9 +8,13 @@ contract Test0 {
     function f(address a, int z) {
         y = x + y + balance(T);
         x = x+y+2;
-        x = x+1;
+        w = x;
+        x = w;
+        x = x + x + 1;
         a.transfer(x:T);
         a.transfer(y:T);
         y = balance(T) + z;
+        w = w+1;
+        // x,y,T_fin = x_2,y_2,T_2;
     }
 }

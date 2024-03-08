@@ -237,7 +237,7 @@ let rec nf1_cmd = function
     | [IfNF bl'] -> List.map (fun (ei',ci') -> (And(ei,ei'),ci')) bl'
     | _ -> [(ei,ci)])
   |> List.flatten
-  |> fun bl1 -> [ ReqNF (simplify_expr (bexpr_of_if_req bl1)) ; IfNF (nf1_drop_if_req bl1) ]
+  |> fun bl1 -> [ ReqNF ( (* simplify_expr *) (bexpr_of_if_req bl1)) ; IfNF (nf1_drop_if_req bl1) ]
 | VarAssignNF(x,e)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_assign_if (VarAssignNF(x,e), IfNF bl))::cl)
 | MapAssignNF(x,e,e')::IfNF(bl)::cl -> nf1_cmd ((nf1_push_assign_if (MapAssignNF(x,e,e'), IfNF bl))::cl)
 | VarAssignNF(x,e)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_assign_req (VarAssignNF(x,e), ReqNF(er)))@cl)
@@ -303,17 +303,21 @@ let ssa_rw_cmd1 st = function
   )
 | _ -> failwith "ssa_rw_cmd1: should not happen"
 
+let nf2_cmd1_list cl =
+  let st0 = fun _ -> 0 in 
+  List.fold_left (fun (l,st) c -> let (cl',st') = ssa_rw_cmd1 st c in (l@cl', st')) ([],st0) cl
+  |> fst
+
 let nf2_cmd xl tl = function
 | [] -> []
 | [IfNF bl] -> let c0 = simassign_init xl tl in
   bl 
-  |> List.map (fun (ei,ci) -> (ei,ci))
-  |> fun y -> [c0 ; IfNF y]
-  (* TODO: complete case IfNF *)
+  |> List.map (fun (ei,ci) -> (ei,nf2_cmd1_list ci))
+  |> fun y -> [ IfNF (List.map (fun (ei,ci) -> (ei,c0::ci)) y) ] 
+  (* TODO: aggiungere in coda l'assegnamento finale *)
 | cl -> let c0 = simassign_init xl tl in
-  let st0 = fun _ -> 0 in
-  let (cl',_) = List.fold_left (fun (l,st) c -> let (cl',st') = ssa_rw_cmd1 st c in (l@cl', st')) ([],st0) cl in 
-  c0::cl'
+  c0::(nf2_cmd1_list cl)
+  (* TODO: skippare la require in testa *)
 
 let nf2_fun xl = function
   | ConstrNF(a,fml,c,nl) -> ConstrNF(a,fml,nf2_cmd xl (toks_of_cmd c) c,nl) 
