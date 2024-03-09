@@ -1,5 +1,14 @@
 open Ast
 
+(******************************************************************************)
+(*                                     Parser driver                          *)
+(******************************************************************************)
+
+let parse (s : string) : contract =
+  let lexbuf = Lexing.from_string s in
+  let ast = Parser.contract Lexer.read_token lexbuf in
+  ast
+
 let rec union l1 l2 = match l1 with
     [] -> l2
   | x::l1' -> (if List.mem x l2 then [] else [x]) @ union l1' l2

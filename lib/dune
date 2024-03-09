@@ -1,5 +1,5 @@
 (library
- (name illum))
+ (name illumLib))
 
 (menhir
  (modules parser))

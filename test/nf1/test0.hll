@@ -1,3 +1,5 @@
+// Test0 is already in NF1
+
 contract Test0 {
     int n; 
     int m;
@@ -13,6 +15,7 @@ contract Test0 {
             n = 2;
             a.transfer(1:T);
         }
+        // n = 1;
     }
     
     // NF1

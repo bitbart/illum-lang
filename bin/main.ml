@@ -1,5 +1,6 @@
-open Illum.Prettyprint
-open Illum.Nf
+open IllumLib.Utils
+open IllumLib.Prettyprint
+open IllumLib.Nf
        
 (* read file, and output it to a string *)
 
