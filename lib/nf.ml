@@ -1,5 +1,6 @@
 open Ast
 open Utils
+open Simplify_expr
 
 (******************************************************************************)
 (*                          NF0: lists for seq and if branches                *)
@@ -27,72 +28,6 @@ let rec fun_declsNF_of_fun_decls = function
 
 let nf0 = function
   | Contract(x,vl,fdl) -> ContractNF(x,vl,fun_declsNF_of_fun_decls fdl)
-
-
-(******************************************************************************)
-(*                                simplify expressions                        *)
-(******************************************************************************)
-
-let rec simplify_expr = function
-| True -> True
-| False -> False
-| Var x -> Var x
-| Map(x,e) -> Map(x,simplify_expr e)
-| IntConst n -> IntConst n
-| AddrConst n -> AddrConst n
-| StringConst s -> StringConst s
-| Not e -> (match simplify_expr e with
-  | True -> False
-  | False -> True
-  | e' -> Not e')
-| And(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
-  | True,e2' -> e2'
-  | False,_ -> False
-  | e1',True -> e1'
-  | _,False -> False
-  | e1',e2' -> And(e1',e2'))
-| Or(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
-  | True,_ -> True
-  | False,e2' -> e2'
-  | _,True -> True
-  | e1',False -> e1'
-  | e1',e2' -> Or(e1',e2'))
-| Add(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
-  | IntConst n1,IntConst n2 -> IntConst (n1+n2)
-  | e1',e2' -> Add(e1',e2'))
-| Sub(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
-  | IntConst n1,IntConst n2 -> IntConst (n1-n2)
-  | e1',e2' -> Sub(e1',e2'))
-| Mul(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
-  | IntConst n1,IntConst n2 -> IntConst (n1*n2)
-  | e1',e2' -> Mul(e1',e2'))
-| Div(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
-  | IntConst n1,IntConst n2 -> IntConst (n1/n2)
-  | e1',e2' -> Div(e1',e2'))
-| Eq(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
-  | IntConst n1,IntConst n2 -> if n1=n2 then True else False
-  | e1',e2' -> Eq(e1',e2'))
-| Neq(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
-  | IntConst n1,IntConst n2 -> if n1<>n2 then True else False
-  | e1',e2' -> Neq(e1',e2'))
-| Leq(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
-  | IntConst n1,IntConst n2 -> if n1<=n2 then True else False
-  | e1',e2' -> Leq(e1',e2'))
-| Le(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
-  | IntConst n1,IntConst n2 -> if n1<n2 then True else False
-  | e1',e2' -> Le(e1',e2'))
-| Geq(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
-  | IntConst n1,IntConst n2 -> if n1>=n2 then True else False
-  | e1',e2' -> Geq(e1',e2'))
-| Ge(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
-  | IntConst n1,IntConst n2 -> if n1>n2 then True else False
-  | e1',e2' -> Ge(e1',e2'))
-| Bal(t) -> Bal(t)
-| BalPre(t) -> BalPre(t)
-| IfE(e1,e2,e3) -> (match simplify_expr e1 with
-  | True -> simplify_expr e2
-  | False -> simplify_expr e3
-  | e1' -> IfE(e1',simplify_expr e2,simplify_expr e3))
 
 
 (******************************************************************************)
@@ -215,14 +150,21 @@ let nf1_pull_assign_req = function
 
 let nf1_pull_send_req = function
 | (SendNF(a,e,t),ReqNF(er)) -> [ReqNF(subst_bal t (Sub(Bal(t),e)) er); SendNF(a,e,t)]
-| _ -> failwith "nf1_pull_send_req"
+| _ -> failwith "nf1_pull_send_req: should never happen"
 
-(* merges the branch conditions with the req conditions *)
-let bexpr_of_if_req = List.fold_left
-  (fun b (ei,ci) -> Or(b,(match ci with
-  | ReqNF(er)::_ -> And(ei,er)
-  | _ -> True)))
-  False
+(* bexpr_of_if_req constructs the top-level require condition. *)
+(* It merges the branch conditions with the req conditions in the if-else-branches *)
+(* Tests: nf1/test6.hll, nf1/test7.hll *)
+let bexpr_of_if_req bl = List.fold_left
+  (fun (breq,bif) (ei,ci) -> 
+    (Or(breq,(match ci with
+    | ReqNF(er)::_ -> And(bif, And(ei,er))
+    | _ -> True))),
+    And(bif,Not ei)
+  )
+  (False,True)
+  bl
+  |> fst
 
 let nf1_drop_if_req = List.map 
   (fun (ei,ci) -> (ei, match ci with 
@@ -237,7 +179,7 @@ let rec nf1_cmd = function
     | [IfNF bl'] -> List.map (fun (ei',ci') -> (And(ei,ei'),ci')) bl'
     | _ -> [(ei,ci)])
   |> List.flatten
-  |> fun bl1 -> [ ReqNF ( (* simplify_expr *) (bexpr_of_if_req bl1)) ; IfNF (nf1_drop_if_req bl1) ]
+  |> fun bl1 -> [ ReqNF ( simplify_expr (bexpr_of_if_req bl1)) ; IfNF (nf1_drop_if_req bl1) ]
 | VarAssignNF(x,e)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_assign_if (VarAssignNF(x,e), IfNF bl))::cl)
 | MapAssignNF(x,e,e')::IfNF(bl)::cl -> nf1_cmd ((nf1_push_assign_if (MapAssignNF(x,e,e'), IfNF bl))::cl)
 | VarAssignNF(x,e)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_assign_req (VarAssignNF(x,e), ReqNF(er)))@cl)

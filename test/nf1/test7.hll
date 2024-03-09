@@ -4,9 +4,6 @@ contract Test7 {
             n = 20;
         }
         require (n < 5);
-
-        // (G && req') || (!G && req)
-        // (G && req') || req
     }
 
     function g() {

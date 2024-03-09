@@ -26,8 +26,8 @@ type expr =
   | Bal of tok
   | IfE of expr * expr * expr (* ternary operator *)
   | BalPre of tok (* balance of T before the call *)       
-  | MapUpdate of expr * expr * expr   (* e1[e2 -> e3] map update*)
-  | MapAccess of expr * expr          (* e1[e2] *)
+  (* | MapUpdate of expr * expr * expr *)   (* e1[e2 -> e3] map update*)
+  (* | MapAccess of expr * expr *)         (* e1[e2] *)
 
 (******************************************************************************)
 (*                                     HeLLUM AST                             *)

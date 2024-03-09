@@ -27,21 +27,21 @@ let rec string_of_expr = function
   | IntConst n -> string_of_int n
   | AddrConst n -> "address(" ^ string_of_int n ^ ")"
   | StringConst s -> "\"" ^ s ^ "\""
-  | Not e -> "! " ^ string_of_expr e
+  | Not e -> "!" ^ string_of_expr e
   | And(e1,e2) -> "(" ^ string_of_expr e1 ^ " && " ^ string_of_expr e2 ^ ")"
-  | Or(e1,e2) -> "(" ^ string_of_expr e1 ^ " || " ^ string_of_expr e2 ^ ")"
+  | Or(e1,e2)  -> "(" ^ string_of_expr e1 ^ " || " ^ string_of_expr e2 ^ ")"
   | Add(e1,e2) -> "(" ^ string_of_expr e1 ^ "+" ^ string_of_expr e2 ^ ")"
   | Sub(e1,e2) -> "(" ^ string_of_expr e1 ^ "-" ^ string_of_expr e2 ^ ")"
   | Mul(e1,e2) -> "(" ^ string_of_expr e1 ^ "*" ^ string_of_expr e2 ^ ")"
   | Div(e1,e2) -> "(" ^ string_of_expr e1 ^ "/" ^ string_of_expr e2 ^ ")"
-  | Eq(e1,e2) -> "(" ^ string_of_expr e1 ^ "==" ^ string_of_expr e2 ^ ")"
+  | Eq(e1,e2)  -> "(" ^ string_of_expr e1 ^ "==" ^ string_of_expr e2 ^ ")"
   | Neq(e1,e2) -> "(" ^ string_of_expr e1 ^ "!=" ^ string_of_expr e2 ^ ")"
   | Leq(e1,e2) -> "(" ^ string_of_expr e1 ^ "<=" ^ string_of_expr e2 ^ ")"
-  | Le(e1,e2) -> "(" ^ string_of_expr e1 ^ "<" ^ string_of_expr e2 ^ ")"
+  | Le(e1,e2)  -> "(" ^ string_of_expr e1 ^ "<" ^ string_of_expr e2 ^ ")"
   | Geq(e1,e2) -> "(" ^ string_of_expr e1 ^ ">=" ^ string_of_expr e2 ^ ")"
-  | Ge(e1,e2) -> "(" ^ string_of_expr e1 ^ ">" ^ string_of_expr e2 ^ ")"
-  | Bal(t) -> "balance(" ^ t ^ ")"
-  | BalPre(t) -> "balance_pre(" ^ t ^ ")"  
+  | Ge(e1,e2)  -> "(" ^ string_of_expr e1 ^ ">" ^ string_of_expr e2 ^ ")"
+  | Bal(t)     -> "balance(" ^ t ^ ")"
+  | BalPre(t)  -> "balance_pre(" ^ t ^ ")"  
   | IfE(e1,e2,e3) -> "(" ^ string_of_expr e1 ^ " ? " ^ string_of_expr e2 ^ " : " ^ string_of_expr e3 ^ ")"
 
 and string_of_cmd t = function
