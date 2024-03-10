@@ -145,7 +145,7 @@ let rec string_of_cmdNF1 t = function
   | SimAssign al ->
     let (xl,el) = (List.map fst al, List.map snd al) in 
     tabs t (
-      (List.fold_left (fun s x -> s ^ (if s<>"" then "," else "") ^ x) "" xl) ^ " = " ^
+      (List.fold_left (fun s x -> s ^ (if s<>"" then "," else "") ^ x) "" xl) ^ " |= " ^
       (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" el) ^ 
       ";")
 

@@ -1,14 +1,7 @@
 contract Test1 {
     int n; 
     int m;
-
-    constructor() { }
-    
-    function g(address a) {
-        require (n==0); 
-        n += 1;
-        a.transfer(1:T);
-    }
+  
     function f(address a) { 
         a.transfer(1:T);
         if (balance(T) == 0)

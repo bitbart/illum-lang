@@ -1,18 +1,16 @@
 contract Test1 {
     int x; 
-    int y;
-
-    constructor() { }
-    
-    // NF1
-    function f(address a) {
-        // require(n<5); 
-        if (x == 0)
-            x = 1;
-        else {
-            x = 2;
-            a.transfer(1:T);
-            a.transfer(1:T2);
+  
+    // IS_NF2
+    function f(address a, int y) {
+        if (x>20) {
+            x = x + y;
         }
+        else {
+            x = y;
+        }
+        a.transfer(x:T);
+        require(x>0 && balance(T)>7);
+        x = x + 1;
     }
 }

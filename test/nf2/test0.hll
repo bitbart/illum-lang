@@ -1,20 +1,11 @@
 contract Test0 {
     int x; 
-    int y;
-
-    constructor() { }
-    
-    // NF1
-    function f(address a, int z) {
-        y = x + y + balance(T);
-        x = x+y+2;
-        w = x;
-        x = w;
-        x = x + x + 1;
+  
+    // IS_NF2
+    function f(address a, int y) {
+        x = x + y;
         a.transfer(x:T);
-        a.transfer(y:T);
-        y = balance(T) + z;
-        w = w+1;
-        // x,y,T_fin = x_2,y_2,T_2;
+        require(x>0 && balance(T)>7);
+        x = x + 1;
     }
 }

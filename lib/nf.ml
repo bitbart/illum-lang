@@ -206,6 +206,33 @@ let nf1 = function
 (*                                       NF2: SSA                             *)
 (******************************************************************************)
 
+let is_disjoint l1 l2 = List.fold_left (fun b x -> b && not (List.mem x l2)) true l1
+
+let is_ssa cl = List.fold_left
+  (fun (b,wl) c -> match c with 
+    | SimAssign al -> List.map fst al |> fun l -> (b && is_disjoint l wl, l@wl)
+    | SendNF(_,_,_) -> (b,wl)
+    | SkipNF -> (true,wl)
+    | _ -> (false,wl)
+  )
+  (true,[]) 
+  cl
+  |> fst
+
+let is_nf2_cmd = function
+| [] -> true
+| [ReqNF _; IfNF bl]
+| [IfNF bl] -> List.map snd bl |> List.for_all is_ssa
+| ReqNF _ ::cl 
+| cl -> is_ssa cl
+
+let is_nf2_fun = function
+  | ConstrNF(_,_,c,_) 
+  | ProcNF(_,_,_,c,_) -> is_nf2_cmd c
+
+let is_nf2 = function
+  ContractNF(_,_,fdl) -> List.for_all is_nf2_fun (list_of_fun_decls fdl)
+
 (* ssavars i xl decorates the state variables xl with the index i *)
 (* Warning: this is potentially unsafe, e.g. if the contract state includes x and x_0 *)
 
@@ -232,14 +259,14 @@ let ssa_rw_expr st e =
   List.fold_left (fun e' t -> subst_bal t (Var (ssa_var st t)) e') e1 tl
 
 let ssa_rw_cmd1 st = function
-| VarAssignNF(x,e) -> let st' = ssa_inc st x in ([VarAssignNF(ssa_var st' x, ssa_rw_expr st e)], st')
+| VarAssignNF(x,e) -> let st' = ssa_inc st x in ([SimAssign [ssa_var st' x, ssa_rw_expr st e]], st')
 | MapAssignNF(x,e1,e2) -> let _ = (MapAssignNF(ssa_var st x,e1,e2), st) in failwith "ssa_rw_cmd1: MapAssign not implemented"
 | SendNF(x,e,t) -> let st' = ssa_inc st t in 
   let e' = Sub(Bal(t),e) in
   (
     [
     SendNF(ssa_var st x,ssa_rw_expr st e,t);
-    VarAssignNF(ssa_var st' t, ssa_rw_expr st e')
+    SimAssign([ssa_var st' t, ssa_rw_expr st e'])
     ], 
     st'
   )
@@ -250,16 +277,21 @@ let nf2_cmd1_list cl =
   List.fold_left (fun (l,st) c -> let (cl',st') = ssa_rw_cmd1 st c in (l@cl', st')) ([],st0) cl
   |> fst
 
-let nf2_cmd xl tl = function
-| [] -> []
-| [IfNF bl] -> let c0 = simassign_init xl tl in
+let nf2_if xl tl bl =
+  let c0 = simassign_init xl tl in
   bl 
   |> List.map (fun (ei,ci) -> (ei,nf2_cmd1_list ci))
-  |> fun y -> [ IfNF (List.map (fun (ei,ci) -> (ei,c0::ci)) y) ] 
+  |> fun y -> [ IfNF (List.map (fun (ei,ci) -> (ei,c0::ci)) y) ]
   (* TODO: aggiungere in coda l'assegnamento finale *)
+
+let nf2_cmd xl tl = function
+| [] -> []
+| [(ReqNF er); IfNF bl] -> (ReqNF er)::nf2_if xl tl bl
+| [IfNF bl] -> nf2_if xl tl bl 
+| (ReqNF er)::cl -> let c0 = simassign_init xl tl in
+  (ReqNF er)::c0::(nf2_cmd1_list cl)
 | cl -> let c0 = simassign_init xl tl in
   c0::(nf2_cmd1_list cl)
-  (* TODO: skippare la require in testa *)
 
 let nf2_fun xl = function
   | ConstrNF(a,fml,c,nl) -> ConstrNF(a,fml,nf2_cmd xl (toks_of_cmd c) c,nl) 
