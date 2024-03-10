@@ -1,12 +1,12 @@
+// Test NF2: assignments, tranfers, require
+
 contract Test0 {
     int x; 
-    int y;
   
-    // IS_NF2
     function f(address a, int y) {
         x = x + y;
         a.transfer(x:T);
         require(x>0 && balance(T)>7);
-        x = x + 1;
+        x = x + balance(T);
     }
 }

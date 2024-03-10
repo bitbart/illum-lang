@@ -280,30 +280,30 @@ let nf2_cmd1_list cl =
   let st0 = fun _ -> 0 in 
   List.fold_left (fun (l,st) c -> let (cl',st') = ssa_rw_cmd1 st c in (l@cl', st')) ([],st0) cl
   
-let nf2_if xl tl bl =
-  let c_init = simassign_init xl tl [] (* TODO: push in if? *) in
+let nf2_if xl tl zl bl =
+  let c_init = simassign_init xl tl zl in
   bl 
   |> List.map (fun (ei,ci) -> (ei,nf2_cmd1_list ci))
   |> fun y -> [ IfNF (List.map (fun (ei,(ci,sti)) -> (ei,(c_init::ci)@[simassign_end xl sti])) y) ]
 
-let nf2_cmd xl tl = function
+let nf2_cmd xl tl zl = function
 | [] -> []
-| [(ReqNF er); IfNF bl] -> (ReqNF er)::nf2_if xl tl bl
-| [IfNF bl] -> nf2_if xl tl bl 
+| [(ReqNF er); IfNF bl] -> (ReqNF er)::nf2_if xl tl zl bl
+| [IfNF bl] -> nf2_if xl tl zl bl 
 | (ReqNF er)::cl -> 
-    let c_init = simassign_init xl tl (vars_of_cmd cl) in
+    let c_init = simassign_init xl tl zl in
     let (cl',st') = nf2_cmd1_list cl in
     let c_end = simassign_end xl st' in
     ((ReqNF er)::c_init::cl')@[c_end]
 | cl -> 
-    let c_init = simassign_init xl tl (vars_of_cmd cl) in
+    let c_init = simassign_init xl tl zl in
     let (cl',st') = nf2_cmd1_list cl in
     let c_end = simassign_end xl st' in
     (c_init::cl')@[c_end]
 
 let nf2_fun xl = function
-  | ConstrNF(a,fml,c,nl) -> ConstrNF(a,fml,nf2_cmd xl (toks_of_cmd c) c,nl) 
-  | ProcNF(f,a,fml,c,nl) -> ProcNF(f,a,fml,nf2_cmd xl (toks_of_cmd c) c,nl)
+  | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf2_cmd xl (toks_of_cmd c) (List.map snd al) c,nl) 
+  | ProcNF(f,al,fml,c,nl) -> ProcNF(f,al,fml,nf2_cmd xl (toks_of_cmd c) (List.map snd al) c,nl)
 
 let rec nf2_fun_decls xl = function
 | EmptyFunDeclsNF -> EmptyFunDeclsNF

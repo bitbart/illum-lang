@@ -1,3 +1,5 @@
+// Test NF2: assignments, tranfers, require, if-else
+
 contract Test1 {
     int x; 
   

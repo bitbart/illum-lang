@@ -1,10 +1,11 @@
-contract Test0 {
+// Test NF2: assignments, tranfers, local variables
+
+contract Test2 {
     int x; 
     int y;
 
     constructor() { }
     
-    // NF1
     function f(address a, int z) {
         y = x + y + balance(T);
         x = x+y+2;
