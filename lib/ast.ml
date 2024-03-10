@@ -6,7 +6,7 @@ type expr =
   | True
   | False
   | Var of ide
-  | Map of ide * expr
+  | Map of expr * expr                (* e1[e2] *)
   | IntConst of int
   | AddrConst of int
   | StringConst of string
@@ -24,10 +24,9 @@ type expr =
   | Geq of expr * expr
   | Ge of expr * expr 
   | Bal of tok
-  | IfE of expr * expr * expr (* ternary operator *)
-  | BalPre of tok (* balance of T before the call *)       
-  (* | MapUpdate of expr * expr * expr *)   (* e1[e2 -> e3] map update*)
-  (* | MapAccess of expr * expr *)         (* e1[e2] *)
+  | IfE of expr * expr * expr         (* ternary operator *)
+  | BalPre of tok                     (* balance of T before the call *)       
+  | MapUpd of expr * expr * expr      (* e1[e2 -> e3] map update*)
 
 (******************************************************************************)
 (*                                     HeLLUM AST                             *)
@@ -36,7 +35,7 @@ type expr =
 type cmd =
   | Skip
   | VarAssign of ide * expr
-  | MapAssign of ide * expr * expr   (* equivalent to VarAssign(ide, MapUpdate(Var(ide),e1,e2)) *)
+  (* | MapAssign of ide * expr * expr *)  (* equivalent to VarAssign(ide, MapUpdate(Var(ide),e1,e2)) *)
   | Seq of cmd * cmd
   | Send of ide * expr * tok
   | If of expr * cmd * cmd
@@ -77,7 +76,7 @@ type contract = Contract of ide * var_decls * fun_decls
 type cmdNF1 = 
 | SkipNF
 | VarAssignNF of ide * expr
-| MapAssignNF of ide * expr * expr
+(* | MapAssignNF of ide * expr * expr *)
 | SendNF of ide * expr * tok
 | ReqNF of expr
 | IfNF of (expr * cmdNF) list

@@ -19,6 +19,36 @@ let is_disjoint l1 l2 = List.fold_left (fun b x -> b && not (List.mem x l2)) tru
 (*                                Variables in a contract                     *)
 (******************************************************************************)
 
+let rec depth_expr = function
+    True
+  | False
+  | IntConst _
+  | AddrConst _ 
+  | StringConst _                
+  | Var _ -> 0
+  | Not e -> 1 + depth_expr e
+  | Map(e1,e2)
+  | And(e1,e2) 
+  | Or (e1,e2) 
+  | Add(e1,e2)
+  | Sub(e1,e2)
+  | Mul(e1,e2)
+  | Div(e1,e2)      
+  | Eq (e1,e2) 
+  | Neq(e1,e2)
+  | Leq(e1,e2) 
+  | Le (e1,e2)
+  | Geq(e1,e2) 
+  | Ge (e1,e2) -> max (depth_expr e1) (depth_expr e2)
+  | Bal(_) 
+  | BalPre(_) -> 0
+  | IfE(e1,e2,e3)  
+  | MapUpd(e1,e2,e3) -> max (depth_expr e1) (max (depth_expr e2) (depth_expr e3))
+
+(******************************************************************************)
+(*                                Variables in a contract                     *)
+(******************************************************************************)
+
 let rec vars_of_expr = function
     True
   | False
@@ -26,7 +56,7 @@ let rec vars_of_expr = function
   | AddrConst _ -> []
   | StringConst _ -> []               
   | Var x -> [x]
-  | Map(x,e) -> union [x] (vars_of_expr e)
+  | Map(e1,e2) -> union (vars_of_expr e1) (vars_of_expr e2)
   | Not e -> vars_of_expr e
   | And(e1,e2) 
   | Or(e1,e2) 
@@ -43,11 +73,12 @@ let rec vars_of_expr = function
   | Bal(_) 
   | BalPre(_) -> []
   | IfE(e1,e2,e3) -> union (vars_of_expr e1) (union (vars_of_expr e2) (vars_of_expr e3))  
+  | MapUpd(e1,e2,e3) -> union (vars_of_expr e1) (union (vars_of_expr e2) (vars_of_expr e3))
 
 and vars_of_cmd1 = function
     SkipNF -> []
   | VarAssignNF(x,e) -> union [x] (vars_of_expr e)
-  | MapAssignNF(x,e1,e2) -> union [x] (union (vars_of_expr e1) (vars_of_expr e2))
+  (* | MapAssignNF(x,e1,e2) -> union [x] (union (vars_of_expr e1) (vars_of_expr e2)) *)
   | IfNF bl -> List.fold_left (fun tl (e,cl) -> union tl (union (vars_of_expr e) (vars_of_cmd cl))) [] bl
   | SendNF(x,e,_) -> union [x] (vars_of_expr e)
   | ReqNF e -> vars_of_expr e                    
@@ -94,11 +125,12 @@ let rec toks_of_expr = function
 | Bal(t)
 | BalPre(t) -> [t]
 | IfE(e1,e2,e3) -> union (toks_of_expr e1) (union (toks_of_expr e2) (toks_of_expr e3))
+| MapUpd(e1,e2,e3) -> union (toks_of_expr e1) (union (toks_of_expr e2) (toks_of_expr e3))
 
 let rec toks_of_cmd1 = function
 | SkipNF -> []
 | VarAssignNF(_,e) -> toks_of_expr e 
-| MapAssignNF(_,e1,e2) -> union (toks_of_expr e1) (toks_of_expr e2)
+(* | MapAssignNF(_,e1,e2) -> union (toks_of_expr e1) (toks_of_expr e2) *)
 | SendNF(_,e,tok) -> union (toks_of_expr e) [tok] 
 | ReqNF e -> toks_of_expr e
 | IfNF bl -> List.fold_left (fun tl (e,cl) -> union tl (union (toks_of_expr e) (toks_of_cmd cl))) [] bl

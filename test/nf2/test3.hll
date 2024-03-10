@@ -1,16 +1,16 @@
+// Test NF2: multi-token, if-else
+
 contract Test3 {
     int x; 
     int y;
-
-    constructor() { }
-    
+  
     function f(address a) {
         if (x == 0)
             x = 1;
         else {
             x = 2;
-            a.transfer(1:T);
-            a.transfer(1:T2);
+            a.transfer(balance(T0)-x:T0);
+            a.transfer(balance(T1)-x:T1);
         }
     }
 }

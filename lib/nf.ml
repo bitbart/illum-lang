@@ -9,7 +9,7 @@ open Simplify_expr
 let rec cmdNF_of_cmd = function
 | Skip -> []
 | VarAssign(x,e) -> [VarAssignNF(x,e)]
-| MapAssign(x,e1,e2) -> [MapAssignNF(x,e1,e2)]
+(* | MapAssign(x,e1,e2) -> [MapAssignNF(x,e1,e2)] *)
 | Send(x,e,tok) -> [SendNF(x,e,tok)]
 | Req(e) -> [ReqNF(e)]
 | If(e,c1,c2) -> let c1' = cmdNF_of_cmd c1 in 
@@ -62,7 +62,7 @@ let rec subst_var x e = function
 | False -> False
 | Var y when y=x -> e
 | Var y -> Var y
-| Map(y,e') -> Map(y,subst_var x e e')
+| Map(e1,e2) -> Map(subst_var x e e1,subst_var x e e2)
 | IntConst n -> IntConst n
 | AddrConst n -> AddrConst n
 | StringConst s -> StringConst s
@@ -82,14 +82,17 @@ let rec subst_var x e = function
 | Bal(t) -> Bal(t)
 | BalPre(t) -> BalPre(t)
 | IfE(e1,e2,e3) -> IfE(subst_var x e e1,subst_var x e e2,subst_var x e e3)
+| MapUpd(e1,e2,e3) -> MapUpd(subst_var x e e1,subst_var x e e2,subst_var x e e3)
+
 
 (* subst_map x e e' e'' replaces all the occurrences of map variable x[e] in e'' with ternary operator *)
 let rec subst_map x e e' = function
 | True -> True
 | False -> False
 | Var y -> Var y
-| Map(y,ey) when y=x -> IfE(Eq(ey,e),e',Map(y,subst_map x e e' ey))
+(* | Map(y,ey) when y=x -> IfE(Eq(ey,e),e',Map(y,subst_map x e e' ey))
 | Map(y,ey) -> Map(y,subst_var x e ey)
+*)
 | IntConst n -> IntConst n
 | AddrConst n -> AddrConst n
 | StringConst s -> StringConst s
@@ -109,6 +112,7 @@ let rec subst_map x e e' = function
 | Bal(t) -> Bal(t)
 | BalPre(t) -> BalPre(t)
 | IfE(e1,e2,e3) -> IfE(subst_map x e e' e1,subst_map x e e' e2,subst_map x e e' e3)
+| _ -> failwith "subst_map: this function should be removed!"
 
 (* subst_bal t e e' replaces all the occurrences of Bal(t) in e' with e *)
 let rec subst_bal t (e:expr) = function
@@ -132,7 +136,6 @@ let rec subst_bal t (e:expr) = function
 
 let nf1_push_assign_if = function
 | (VarAssignNF(x,e), IfNF bl) -> IfNF(List.map (fun (ei,ci) -> (subst_var x e ei,VarAssignNF(x,e)::ci)) bl)
-| (MapAssignNF(x,e,e'), IfNF bl) -> IfNF(List.map (fun (ei,ci) -> (subst_map x e e' ei,MapAssignNF(x,e,e')::ci)) bl)
 | _ -> failwith "nf1_push_assign_if"
 
 let nf1_push_send_if = function
@@ -145,7 +148,6 @@ let nf1_push_if_cmd = function
 
 let nf1_pull_assign_req = function
 | (VarAssignNF(x,e),ReqNF(er)) -> [ReqNF(subst_var x e er); VarAssignNF(x,e)]
-| (MapAssignNF(x,e,e'),ReqNF(er)) -> [ReqNF(subst_map x e e' er); MapAssignNF(x,e,e')]
 | _ -> failwith "nf1_pull_assign_req"
 
 let nf1_pull_send_req = function
@@ -181,9 +183,7 @@ let rec nf1_cmd = function
   |> List.flatten
   |> fun bl1 -> [ ReqNF ( simplify_expr (bexpr_of_if_req bl1)) ; IfNF (nf1_drop_if_req bl1) ]
 | VarAssignNF(x,e)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_assign_if (VarAssignNF(x,e), IfNF bl))::cl)
-| MapAssignNF(x,e,e')::IfNF(bl)::cl -> nf1_cmd ((nf1_push_assign_if (MapAssignNF(x,e,e'), IfNF bl))::cl)
 | VarAssignNF(x,e)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_assign_req (VarAssignNF(x,e), ReqNF(er)))@cl)
-| MapAssignNF(x,e,e')::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_assign_req (MapAssignNF(x,e,e'), ReqNF(er)))@cl)
 | SendNF(a,e,t)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_send_req (SendNF(a,e,t), ReqNF(er)))@cl)
 | ReqNF(e1)::ReqNF(e2)::cl -> nf1_cmd (ReqNF(And(e1,e2))::cl)
 | SendNF(x,e,t)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_send_if (SendNF(x,e,t), IfNF(bl)))::cl)
@@ -234,43 +234,49 @@ let is_nf2 = function
 (* ssavars i xl decorates the state variables xl with the index i *)
 (* Warning: this is potentially unsafe, e.g. if the contract state includes x and x_0 *)
 
-let ssavars i xl = List.fold_right (fun x xl' -> (x ^ "_" ^ (string_of_int i))::xl') xl [] 
-
 (* ssa_var st x generates a variable identifier for variable x in SSA state st *)
 let ssa_var st x = x ^ "_" ^ (string_of_int (st x))
+and ssa_vars xl = List.fold_right (fun x xl' -> (x ^ "_0")::xl') xl [] 
+
+(* ssa_tok st t generates a variable identifier for token t in SSA state st *)
+let ssa_tok st t = "bal_" ^ t ^ "_" ^ (string_of_int (st t))
+(* ssa_tok_fin x generates a variable identifier for the final balance of token t *)
+and ssa_tok_fin t = "bal_" ^ t ^ "_fin"
+and ssa_toks tl = List.fold_right (fun x tl' -> ("bal_" ^ x ^ "_0")::tl') tl []
 
 (* ssa_inc st x increases the index of the SSA variable x in SSA state st *)
 let ssa_inc st x = fun y -> if x=y then st x + 1 else st y
 
 let simassign_init xl tl zl =
   let zl' = diff zl xl in 
-  let xl0,tl0,zl0 = (ssavars 0 xl,ssavars 0 tl,ssavars 0 zl') in
+  let xl0,tl0,zl0 = (ssa_vars xl,ssa_toks tl,ssa_vars zl') in
   SimAssign(
-    (List.map2 (fun y x -> (y,Var x)) (xl0 @zl0) (xl @ zl')) @
+    (List.map2 (fun y x -> (y,Var x)) (xl0 @ zl0) (xl @ zl')) @
     (List.map2 (fun y x -> (y,BalPre x)) tl0 tl)
   )
 
-let simassign_end xl st =
+let simassign_end xl tl st =
   SimAssign(
-    List.map (fun x -> (x,Var (ssa_var st x))) xl
+    (List.map (fun x -> (x,Var (ssa_var st x))) xl) @
+    (List.map (fun t -> (ssa_tok_fin t,Var (ssa_tok st t))) tl)
   )
 
-let ssa_rw_expr st e = 
+let ssa_rw_expr st e =  
+  (* (List.fold_left (fun _ s -> print_endline s) () xl); *)
   let (xl,tl) = (vars_of_expr e, toks_of_expr e) in
   (* replaces the variables in e with SSA variables *)
   let e1 = List.fold_left (fun e' x -> subst_var x (Var (ssa_var st x)) e') e xl in
   (* replaces the balance(T) subexpr in e with SSA variables *)
-  List.fold_left (fun e' t -> subst_bal t (Var (ssa_var st t)) e') e1 tl
+  List.fold_left (fun e' t -> subst_bal t (Var (ssa_tok st t)) e') e1 tl
 
 let ssa_rw_cmd1 st = function
 | VarAssignNF(x,e) -> let st' = ssa_inc st x in ([SimAssign [ssa_var st' x, ssa_rw_expr st e]], st')
-| MapAssignNF(x,e1,e2) -> let _ = (MapAssignNF(ssa_var st x,e1,e2), st) in failwith "ssa_rw_cmd1: MapAssign not implemented"
 | SendNF(x,e,t) -> let st' = ssa_inc st t in 
   let e' = Sub(Bal(t),e) in
   (
     [
     SendNF(ssa_var st x,ssa_rw_expr st e,t);
-    SimAssign([ssa_var st' t, ssa_rw_expr st e'])
+    SimAssign([ssa_tok st' t, ssa_rw_expr st e'])
     ], 
     st'
   )
@@ -284,7 +290,7 @@ let nf2_if xl tl zl bl =
   let c_init = simassign_init xl tl zl in
   bl 
   |> List.map (fun (ei,ci) -> (ei,nf2_cmd1_list ci))
-  |> fun y -> [ IfNF (List.map (fun (ei,(ci,sti)) -> (ei,(c_init::ci)@[simassign_end xl sti])) y) ]
+  |> fun y -> [ IfNF (List.map (fun (ei,(ci,sti)) -> (ei,(c_init::ci)@[simassign_end xl tl sti])) y) ]
 
 let nf2_cmd xl tl zl = function
 | [] -> []
@@ -293,12 +299,12 @@ let nf2_cmd xl tl zl = function
 | (ReqNF er)::cl -> 
     let c_init = simassign_init xl tl zl in
     let (cl',st') = nf2_cmd1_list cl in
-    let c_end = simassign_end xl st' in
+    let c_end = simassign_end xl tl st' in
     ((ReqNF er)::c_init::cl')@[c_end]
 | cl -> 
     let c_init = simassign_init xl tl zl in
     let (cl',st') = nf2_cmd1_list cl in
-    let c_end = simassign_end xl st' in
+    let c_end = simassign_end xl tl st' in
     (c_init::cl')@[c_end]
 
 let nf2_fun xl = function

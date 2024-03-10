@@ -1,0 +1,16 @@
+// Test NF1: mapping write, mapping read, require, if-else
+
+contract Test10 {                   
+
+  function f() {
+    x[i] = 0;
+    require(x[j]==1);
+    if (x[j]==2) {
+      n=n+1;
+      a.transfer(1:T);
+    }
+    else {
+      m=(n+3);
+    }
+  }
+ }

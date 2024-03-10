@@ -45,3 +45,6 @@ let test_nf2 fname = match read_file fname with
 
 let%test "nf2_test0" = test_nf2 "nf2/test0.hll"
 let%test "nf2_test1" = test_nf2 "nf2/test1.hll"
+let%test "nf2_test2" = test_nf2 "nf2/test2.hll"
+let%test "nf2_test3" = test_nf2 "nf2/test3.hll"
+let%test "nf2_test4" = test_nf2 "nf2/test4.hll"

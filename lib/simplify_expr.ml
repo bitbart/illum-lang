@@ -8,7 +8,7 @@ let rec simplify_expr = function
 | True -> True
 | False -> False
 | Var x -> Var x
-| Map(x,e) -> Map(x,simplify_expr e)
+| Map(e1,e2) -> Map(simplify_expr e1,simplify_expr e2)
 | IntConst n -> IntConst n
 | AddrConst n -> AddrConst n
 | StringConst s -> StringConst s
@@ -64,3 +64,4 @@ let rec simplify_expr = function
   | True -> simplify_expr e2
   | False -> simplify_expr e3
   | e1' -> IfE(e1',simplify_expr e2,simplify_expr e3))
+| MapUpd(e1,e2,e3) -> MapUpd(simplify_expr e1,simplify_expr e2,simplify_expr e3)

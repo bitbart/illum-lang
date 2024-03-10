@@ -81,7 +81,7 @@ expr:
   | e1=expr; GEQ; e2=expr { Geq(e1,e2) }
   | e1=expr; GE; e2=expr { Ge(e1,e2) }
   | x = ID { Var(x) }
-  | x = ID; LBRACKET; e = expr; RBRACKET; { Map(x,e) }
+  | e1 = expr; LBRACKET; e2 = expr; RBRACKET; { Map(e1,e2) }
   | LPAREN; e = expr; RPAREN { e }
 ;
 
@@ -90,8 +90,8 @@ cmd1:
   | REQ; e = expr; CMDSEP; { Req(e) } 
   | x = ID; TAKES; e=expr; CMDSEP; { VarAssign(x,e) }
   | x = ID; PLUSTAKES; e=expr; CMDSEP; { VarAssign(x,Add(Var(x),e)) }
-  | x = ID; LBRACKET; e1 = expr; RBRACKET; TAKES; e2=expr; CMDSEP; { MapAssign(x,e1,e2) }
-  | x = ID; LBRACKET; e1 = expr; RBRACKET; PLUSTAKES; e2=expr; CMDSEP; { MapAssign(x,e1,Add(Map(x,e1),e2)) }
+  | x = ID; LBRACKET; e1 = expr; RBRACKET; TAKES; e2=expr; CMDSEP; { VarAssign(x,MapUpd(Var x,e1,e2)) }
+  | x = ID; LBRACKET; e1 = expr; RBRACKET; PLUSTAKES; e2=expr; CMDSEP; { VarAssign(x,MapUpd(Var x,e1,Add(Map(Var x,e1),e2))) }
   | x = ID; SENDSEP; SEND; LPAREN; e=expr; TOKSEP; t = ID; RPAREN; CMDSEP; { Send(x,e,t) }
   | IF; LPAREN; e = expr; RPAREN; c1 = cmd1; { If(e,c1,Skip) }
   | IF; LPAREN; e = expr; RPAREN; LBRACE; c1 = cmd; RBRACE; { If(e,c1,Skip) }
