@@ -84,36 +84,6 @@ let rec subst_var x e = function
 | IfE(e1,e2,e3) -> IfE(subst_var x e e1,subst_var x e e2,subst_var x e e3)
 | MapUpd(e1,e2,e3) -> MapUpd(subst_var x e e1,subst_var x e e2,subst_var x e e3)
 
-
-(* subst_map x e e' e'' replaces all the occurrences of map variable x[e] in e'' with ternary operator *)
-let rec subst_map x e e' = function
-| True -> True
-| False -> False
-| Var y -> Var y
-(* | Map(y,ey) when y=x -> IfE(Eq(ey,e),e',Map(y,subst_map x e e' ey))
-| Map(y,ey) -> Map(y,subst_var x e ey)
-*)
-| IntConst n -> IntConst n
-| AddrConst n -> AddrConst n
-| StringConst s -> StringConst s
-| Not e1 -> Not (subst_map x e e' e1)
-| And(e1,e2) -> And(subst_map x e e' e1,subst_map x e e' e2)
-| Or(e1,e2)  -> Or (subst_map x e e' e1,subst_map x e e' e2)
-| Add(e1,e2) -> Add(subst_map x e e' e1,subst_map x e e' e2)
-| Sub(e1,e2) -> Sub(subst_map x e e' e1,subst_map x e e' e2)
-| Mul(e1,e2) -> Mul(subst_map x e e' e1,subst_map x e e' e2)
-| Div(e1,e2) -> Div(subst_map x e e' e1,subst_map x e e' e2)
-| Eq(e1,e2)  -> Eq (subst_map x e e' e1,subst_map x e e' e2)
-| Neq(e1,e2) -> Neq(subst_map x e e' e1,subst_map x e e' e2)
-| Leq(e1,e2) -> Leq(subst_map x e e' e1,subst_map x e e' e2)
-| Le(e1,e2)  -> Le (subst_map x e e' e1,subst_map x e e' e2) 
-| Geq(e1,e2) -> Geq(subst_map x e e' e1,subst_map x e e' e2)
-| Ge(e1,e2)  -> Ge (subst_map x e e' e1,subst_map x e e' e2)
-| Bal(t) -> Bal(t)
-| BalPre(t) -> BalPre(t)
-| IfE(e1,e2,e3) -> IfE(subst_map x e e' e1,subst_map x e e' e2,subst_map x e e' e3)
-| _ -> failwith "subst_map: this function should be removed!"
-
 (* subst_bal t e e' replaces all the occurrences of Bal(t) in e' with e *)
 let rec subst_bal t (e:expr) = function
 | Bal(t') when t'=t -> e
@@ -317,3 +287,45 @@ let rec nf2_fun_decls xl = function
 
 let nf2 = function ContractNF(x,vl,fdl) -> 
   ContractNF(x,vl,nf2_fun_decls (vars_of_var_decls vl) fdl)
+
+(******************************************************************************)
+(*                              NF3: move transfers up                        *)
+(******************************************************************************)
+
+let rec is_nf3_assign = function
+| [] -> true
+| SimAssign _ ::cl -> is_nf3_assign cl
+| _ -> false
+
+let rec is_nf3_send = function
+| [] -> true 
+| SendNF _ ::cl -> is_nf3_send cl
+| SimAssign _ ::cl -> is_nf3_assign cl
+| _ -> false
+
+let is_nf3_cmd = function
+| [IfNF bl]
+| [ReqNF(_);IfNF bl] -> List.fold_left (fun b (_,c) -> b && is_nf3_send c) true bl
+| ReqNF(_)::cl -> is_nf3_send cl
+| cl -> is_nf3_send cl
+
+let rec nf3_cmd = function
+| c when is_nf3_cmd c -> c
+| ReqNF(e)::cl -> ReqNF(e)::(nf3_cmd cl)
+| SendNF(a,e,t)::cl -> SendNF(a,e,t)::(nf3_cmd cl)
+(* TODO: adjust expressions! *)
+| SimAssign(al)::SendNF(a,e,t)::cl -> SendNF(a,e,t)::(nf3_cmd (SimAssign(al)::cl))
+| [IfNF _] -> failwith "nf3_cmd: if case not implemented" 
+| c::cl -> nf3_cmd (c::nf3_cmd cl)
+| _ -> failwith "nf3_cmd"
+
+let nf3_fun = function
+  | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf3_cmd c,nl) 
+  | ProcNF(f,al,fml,c,nl) -> ProcNF(f,al,fml,nf3_cmd c,nl)
+
+let rec nf3_fun_decls = function
+| EmptyFunDeclsNF -> EmptyFunDeclsNF
+| FunDeclSeqNF(f,fl) -> FunDeclSeqNF(nf3_fun f,nf3_fun_decls fl)
+
+let nf3 = function ContractNF(x,vl,fdl) -> 
+  ContractNF(x,vl,nf3_fun_decls fdl)
