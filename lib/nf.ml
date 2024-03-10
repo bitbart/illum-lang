@@ -206,8 +206,6 @@ let nf1 = function
 (*                                       NF2: SSA                             *)
 (******************************************************************************)
 
-let is_disjoint l1 l2 = List.fold_left (fun b x -> b && not (List.mem x l2)) true l1
-
 let is_ssa cl = List.fold_left
   (fun (b,wl) c -> match c with 
     | SimAssign al -> List.map fst al |> fun l -> (b && is_disjoint l wl, l@wl)
@@ -238,18 +236,24 @@ let is_nf2 = function
 
 let ssavars i xl = List.fold_right (fun x xl' -> (x ^ "_" ^ (string_of_int i))::xl') xl [] 
 
-let simassign_init xl tl =
-  let xl0,tl0 = (ssavars 0 xl,ssavars 0 tl) in
-  SimAssign(
-    (List.map2 (fun y x -> (y,Var x)) xl0 xl) @
-    (List.map2 (fun y x -> (y,BalPre x)) tl0 tl)
-  )
-
 (* ssa_var st x generates a variable identifier for variable x in SSA state st *)
 let ssa_var st x = x ^ "_" ^ (string_of_int (st x))
 
 (* ssa_inc st x increases the index of the SSA variable x in SSA state st *)
 let ssa_inc st x = fun y -> if x=y then st x + 1 else st y
+
+let simassign_init xl tl zl =
+  let zl' = diff zl xl in 
+  let xl0,tl0,zl0 = (ssavars 0 xl,ssavars 0 tl,ssavars 0 zl') in
+  SimAssign(
+    (List.map2 (fun y x -> (y,Var x)) (xl0 @zl0) (xl @ zl')) @
+    (List.map2 (fun y x -> (y,BalPre x)) tl0 tl)
+  )
+
+let simassign_end xl st =
+  SimAssign(
+    List.map (fun x -> (x,Var (ssa_var st x))) xl
+  )
 
 let ssa_rw_expr st e = 
   let (xl,tl) = (vars_of_expr e, toks_of_expr e) in
@@ -275,23 +279,27 @@ let ssa_rw_cmd1 st = function
 let nf2_cmd1_list cl =
   let st0 = fun _ -> 0 in 
   List.fold_left (fun (l,st) c -> let (cl',st') = ssa_rw_cmd1 st c in (l@cl', st')) ([],st0) cl
-  |> fst
-
+  
 let nf2_if xl tl bl =
-  let c0 = simassign_init xl tl in
+  let c_init = simassign_init xl tl [] (* TODO: push in if? *) in
   bl 
   |> List.map (fun (ei,ci) -> (ei,nf2_cmd1_list ci))
-  |> fun y -> [ IfNF (List.map (fun (ei,ci) -> (ei,c0::ci)) y) ]
-  (* TODO: aggiungere in coda l'assegnamento finale *)
+  |> fun y -> [ IfNF (List.map (fun (ei,(ci,sti)) -> (ei,(c_init::ci)@[simassign_end xl sti])) y) ]
 
 let nf2_cmd xl tl = function
 | [] -> []
 | [(ReqNF er); IfNF bl] -> (ReqNF er)::nf2_if xl tl bl
 | [IfNF bl] -> nf2_if xl tl bl 
-| (ReqNF er)::cl -> let c0 = simassign_init xl tl in
-  (ReqNF er)::c0::(nf2_cmd1_list cl)
-| cl -> let c0 = simassign_init xl tl in
-  c0::(nf2_cmd1_list cl)
+| (ReqNF er)::cl -> 
+    let c_init = simassign_init xl tl (vars_of_cmd cl) in
+    let (cl',st') = nf2_cmd1_list cl in
+    let c_end = simassign_end xl st' in
+    ((ReqNF er)::c_init::cl')@[c_end]
+| cl -> 
+    let c_init = simassign_init xl tl (vars_of_cmd cl) in
+    let (cl',st') = nf2_cmd1_list cl in
+    let c_end = simassign_end xl st' in
+    (c_init::cl')@[c_end]
 
 let nf2_fun xl = function
   | ConstrNF(a,fml,c,nl) -> ConstrNF(a,fml,nf2_cmd xl (toks_of_cmd c) c,nl) 

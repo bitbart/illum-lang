@@ -1,7 +1,6 @@
 contract Test1 {
     int x; 
   
-    // IS_NF2
     function f(address a, int y) {
         if (x>20) {
             x = x + y;

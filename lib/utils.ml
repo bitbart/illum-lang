@@ -9,12 +9,14 @@ let parse (s : string) : contract =
   let ast = Parser.contract Lexer.read_token lexbuf in
   ast
 
-let rec union l1 l2 = match l1 with
-    [] -> l2
-  | x::l1' -> (if List.mem x l2 then [] else [x]) @ union l1' l2
+let union l1 l2 = List.fold_left (fun l x -> if List.mem x l then l else x::l) l1 l2
+
+let diff l1 l2 = List.filter (fun x -> not (List.mem x l2)) l1
+
+let is_disjoint l1 l2 = List.fold_left (fun b x -> b && not (List.mem x l2)) true l1
 
 (******************************************************************************)
-(*                              Variables in an expression                    *)
+(*                                Variables in a contract                     *)
 (******************************************************************************)
 
 let rec vars_of_expr = function
@@ -42,16 +44,16 @@ let rec vars_of_expr = function
   | BalPre(_) -> []
   | IfE(e1,e2,e3) -> union (vars_of_expr e1) (union (vars_of_expr e2) (vars_of_expr e3))  
 
-and vars_of_cmd = function
-    Skip -> []
-  | VarAssign(x,e) -> union [x] (vars_of_expr e)
-  | MapAssign(x,e1,e2) -> union [x] (union (vars_of_expr e1) (vars_of_expr e2))
-  | Seq(c1,c2) -> union (vars_of_cmd c1) (vars_of_cmd c2)
-  | If(e,c1,c2) -> union (vars_of_expr e) (union (vars_of_cmd c1) (vars_of_cmd c2))
-  | Send(x,e,y) -> union [x] (union [y] (vars_of_expr e))
-  | Req(e) -> vars_of_expr e                    
-
-
+and vars_of_cmd1 = function
+    SkipNF -> []
+  | VarAssignNF(x,e) -> union [x] (vars_of_expr e)
+  | MapAssignNF(x,e1,e2) -> union [x] (union (vars_of_expr e1) (vars_of_expr e2))
+  | IfNF bl -> List.fold_left (fun tl (e,cl) -> union tl (union (vars_of_expr e) (vars_of_cmd cl))) [] bl
+  | SendNF(x,e,_) -> union [x] (vars_of_expr e)
+  | ReqNF e -> vars_of_expr e                    
+  | SimAssign _ -> failwith "vars_of_cmd1: SimAssign"
+and vars_of_cmd cl = List.fold_left (fun tl c -> union tl (vars_of_cmd1 c)) [] cl
+  
 (******************************************************************************)
 (*                        Variables in the contract state                     *)
 (******************************************************************************)

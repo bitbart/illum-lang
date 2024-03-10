@@ -1,5 +1,6 @@
 contract Test0 {
     int x; 
+    int y;
   
     // IS_NF2
     function f(address a, int y) {
