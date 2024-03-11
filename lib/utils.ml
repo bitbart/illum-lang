@@ -39,11 +39,11 @@ let rec depth_expr = function
   | Leq(e1,e2) 
   | Le (e1,e2)
   | Geq(e1,e2) 
-  | Ge (e1,e2) -> max (depth_expr e1) (depth_expr e2)
+  | Ge (e1,e2) -> 1 + max (depth_expr e1) (depth_expr e2)
   | Bal(_) 
   | BalPre(_) -> 0
   | IfE(e1,e2,e3)  
-  | MapUpd(e1,e2,e3) -> max (depth_expr e1) (max (depth_expr e2) (depth_expr e3))
+  | MapUpd(e1,e2,e3) -> 1 + max (depth_expr e1) (max (depth_expr e2) (depth_expr e3))
 
 (******************************************************************************)
 (*                                Variables in a contract                     *)

@@ -22,27 +22,30 @@ let rec string_of_expr e = match e with
   | AddrConst n -> "address(" ^ string_of_int n ^ ")"
   | StringConst s -> "\"" ^ s ^ "\""
   | Not e -> "!(" ^ string_of_expr e ^ ")"
-  | And(e1,e2) -> bool_binop (string_of_expr e1) (string_of_expr e2) "&&" (depth_expr e)
-  | Or(e1,e2)  -> bool_binop (string_of_expr e1) (string_of_expr e2) "||" (depth_expr e)
-  | Add(e1,e2) -> int_binop e1 e2 "+"  (depth_expr e)
-  | Sub(e1,e2) -> int_binop e1 e2 "-"  (depth_expr e)
-  | Mul(e1,e2) -> int_binop e1 e2 "*"  (depth_expr e)
-  | Div(e1,e2) -> int_binop e1 e2 "/"  (depth_expr e)
-  | Eq(e1,e2)  -> int_binop e1 e2 "==" (depth_expr e)
-  | Neq(e1,e2) -> int_binop e1 e2 "!=" (depth_expr e)
-  | Leq(e1,e2) -> int_binop e1 e2 "<=" (depth_expr e)
-  | Le(e1,e2)  -> int_binop e1 e2 "<"  (depth_expr e)
-  | Geq(e1,e2) -> int_binop e1 e2 ">=" (depth_expr e)
-  | Ge(e1,e2)  -> int_binop e1 e2 ">"  (depth_expr e)
+  | And(e1,e2) -> bool_binop e1 e2 "&&" 
+  | Or(e1,e2)  -> bool_binop e1 e2 "||"
+  | Add(e1,e2) -> int_binop e1 e2 "+"  
+  | Sub(e1,e2) -> int_binop e1 e2 "-"  
+  | Mul(e1,e2) -> int_binop e1 e2 "*"  
+  | Div(e1,e2) -> int_binop e1 e2 "/"  
+  | Eq(e1,e2)  -> int_binop e1 e2 "==" 
+  | Neq(e1,e2) -> int_binop e1 e2 "!=" 
+  | Leq(e1,e2) -> int_binop e1 e2 "<=" 
+  | Le(e1,e2)  -> int_binop e1 e2 "<"  
+  | Geq(e1,e2) -> int_binop e1 e2 ">=" 
+  | Ge(e1,e2)  -> int_binop e1 e2 ">"  
   | Bal(t)     -> "balance(" ^ t ^ ")"
   | BalPre(t)  -> "balance_pre(" ^ t ^ ")"  
   | IfE(e1,e2,e3) -> "(" ^ string_of_expr e1 ^ " ? " ^ string_of_expr e2 ^ " : " ^ string_of_expr e3 ^ ")"
   | MapUpd(e1,e2,e3) -> string_of_expr e1 ^ "[" ^ string_of_expr e2 ^ "->" ^ string_of_expr e3 ^ "]"
 
-and bool_binop s1 s2 op d = addparen (s1 ^ " " ^ op ^ " " ^ s2) d
+and bool_binop e1 e2 op  = 
+  let s1,s2 = string_of_expr e1,string_of_expr e2 in
+  addparen s1 (depth_expr e1) ^ " " ^ op ^ " " ^ addparen s2 (depth_expr e2)
 
-and int_binop e1 e2 op d = let s1,s2 = string_of_expr e1,string_of_expr e2 in
-  addparen (s1 ^ op ^ (if op="+" then s2 else addparen s2 1)) d 
+and int_binop e1 e2 op = 
+  let s1,s2 = string_of_expr e1,string_of_expr e2 in
+  addparen s1 (depth_expr e1) ^ op ^ addparen s2 (depth_expr e2) 
 
 and string_of_cmd t = function
     Skip -> tabs t "skip;"

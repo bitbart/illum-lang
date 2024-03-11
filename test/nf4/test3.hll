@@ -1,0 +1,11 @@
+// Test NF4: mapping read, mapping write
+
+contract Test3 {
+    mapping (address => uint) m; 
+    int y;
+
+    function f(int x) {
+        m[x+y] = x;
+        m[5] = m[7];
+    }
+}
