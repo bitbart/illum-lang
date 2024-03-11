@@ -59,8 +59,18 @@ let test_nf3 fname = match read_file fname with
   "" -> false
 | s -> s |> parse |> nf0 |> nf1 |> nf2 |> nf3 |> is_nf3
 
-let%test "nf3_test0" = test_nf2 "nf3/test0.hll"
-let%test "nf3_test1" = test_nf2 "nf3/test1.hll"
-let%test "nf3_test2" = test_nf2 "nf3/test2.hll"
-let%test "nf3_test3" = test_nf2 "nf3/test3.hll"
-let%test "nf3_test4" = test_nf2 "nf3/test4.hll"
+let%test "nf3_test0" = test_nf3 "nf3/test0.hll"
+let%test "nf3_test1" = test_nf3 "nf3/test1.hll"
+let%test "nf3_test2" = test_nf3 "nf3/test2.hll"
+let%test "nf3_test3" = test_nf3 "nf3/test3.hll"
+let%test "nf3_test4" = test_nf3 "nf3/test4.hll"
+
+(******************************************************************************)
+(*                                       NF4                                  *)
+(******************************************************************************)
+
+let test_nf4 fname = match read_file fname with
+  "" -> false
+| s -> s |> parse |> nf0 |> nf1 |> nf2 |> nf3 |> nf4 |> is_nf4
+
+let%test "nf4_test0" = test_nf4 "nf4/test0.hll"

@@ -290,3 +290,55 @@ let rec nf3_fun_decls = function
 
 let nf3 = function ContractNF(x,vl,fdl) -> 
   ContractNF(x,vl,nf3_fun_decls fdl)
+
+(******************************************************************************)
+(*                                 NF4: fold assignments                      *)
+(******************************************************************************)
+
+let rec is_nf4_send = function
+| [] -> true 
+| SendNF _ ::cl -> is_nf4_send cl
+| [ SimAssign _ ] -> true
+| _ -> false
+
+let is_nf4_cmd = function
+| [IfNF bl]
+| [ReqNF(_);IfNF bl] -> bl |> List.map snd |> List.for_all is_nf4_send 
+| ReqNF(_)::cl -> is_nf4_send cl
+| cl -> is_nf4_send cl
+
+let is_nf4_fun = function
+  | ConstrNF(_,_,c,_) 
+  | ProcNF(_,_,_,c,_) -> is_nf4_cmd c
+
+let is_nf4 = function
+  ContractNF(_,_,fdl) -> List.for_all is_nf4_fun (list_of_fun_decls fdl)
+
+let is_simassign = function
+| SimAssign _ -> true
+| _ -> false
+
+let collapse_simassign2 c1 c2 = match (c1,c2) with
+| (SimAssign al1, SimAssign al2) -> 
+  let al1' = List.map (fun (x,e) -> (x, simsubst (fun_of_list al2) e)) al1 in
+  SimAssign(al1')
+| _ -> failwith "collapse_simassign2: should never happen"
+
+let collapse_simassign cl = match List.rev cl with
+| [] -> failwith "collapse_simassign: should never happen"
+| c::cl' -> List.fold_left (fun c1 c2 -> collapse_simassign2 c1 c2) c cl'
+
+let nf4_cmd cl = 
+  (List.filter (fun c -> not (is_simassign c)) cl) @
+  [collapse_simassign (List.filter is_simassign cl)] 
+
+let nf4_fun = function
+  | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf4_cmd c,nl) 
+  | ProcNF(f,al,fml,c,nl) -> ProcNF(f,al,fml,nf4_cmd c,nl)
+
+let rec nf4_fun_decls = function
+| EmptyFunDeclsNF -> EmptyFunDeclsNF
+| FunDeclSeqNF(f,fl) -> FunDeclSeqNF(nf4_fun f,nf4_fun_decls fl)
+
+let nf4 = function ContractNF(x,vl,fdl) -> 
+  ContractNF(x,vl,nf4_fun_decls fdl)

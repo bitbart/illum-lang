@@ -1,0 +1,10 @@
+// Test NF4: 1 assignment, 1 tranfer
+
+contract Test0 {
+    int x; 
+  
+    function f(address a, int y) {
+        x = x + y;
+        a.transfer(x:T);
+    }
+}

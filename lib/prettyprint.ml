@@ -13,9 +13,6 @@ let rec tabs (t:int) (s:string) = if t=0 then s else tabs (t-1) ("  " ^ s)
 
 let addparen s d = if d>0 then "(" ^ s ^ ")" else s
 
-let bool_binop s1 s2 op d = addparen (s1 ^ " " ^ op ^ " " ^ s2) d
-let int_binop s1 s2 op d = addparen (s1 ^ op ^ s2) d
-
 let rec string_of_expr e = match e with
     True -> "true"
   | False -> "false"
@@ -27,20 +24,25 @@ let rec string_of_expr e = match e with
   | Not e -> "!(" ^ string_of_expr e ^ ")"
   | And(e1,e2) -> bool_binop (string_of_expr e1) (string_of_expr e2) "&&" (depth_expr e)
   | Or(e1,e2)  -> bool_binop (string_of_expr e1) (string_of_expr e2) "||" (depth_expr e)
-  | Add(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) "+" (depth_expr e)
-  | Sub(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) "-" (depth_expr e)
-  | Mul(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) "*" (depth_expr e)
-  | Div(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) "/" (depth_expr e)
-  | Eq(e1,e2)  -> int_binop (string_of_expr e1) (string_of_expr e2) "==" (depth_expr e)
-  | Neq(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) "!=" (depth_expr e)
-  | Leq(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) "<=" (depth_expr e)
-  | Le(e1,e2)  -> int_binop (string_of_expr e1) (string_of_expr e2) "<" (depth_expr e)
-  | Geq(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) ">=" (depth_expr e)
-  | Ge(e1,e2)  -> int_binop (string_of_expr e1) (string_of_expr e2) ">" (depth_expr e)
+  | Add(e1,e2) -> int_binop e1 e2 "+"  (depth_expr e)
+  | Sub(e1,e2) -> int_binop e1 e2 "-"  (depth_expr e)
+  | Mul(e1,e2) -> int_binop e1 e2 "*"  (depth_expr e)
+  | Div(e1,e2) -> int_binop e1 e2 "/"  (depth_expr e)
+  | Eq(e1,e2)  -> int_binop e1 e2 "==" (depth_expr e)
+  | Neq(e1,e2) -> int_binop e1 e2 "!=" (depth_expr e)
+  | Leq(e1,e2) -> int_binop e1 e2 "<=" (depth_expr e)
+  | Le(e1,e2)  -> int_binop e1 e2 "<"  (depth_expr e)
+  | Geq(e1,e2) -> int_binop e1 e2 ">=" (depth_expr e)
+  | Ge(e1,e2)  -> int_binop e1 e2 ">"  (depth_expr e)
   | Bal(t)     -> "balance(" ^ t ^ ")"
   | BalPre(t)  -> "balance_pre(" ^ t ^ ")"  
   | IfE(e1,e2,e3) -> "(" ^ string_of_expr e1 ^ " ? " ^ string_of_expr e2 ^ " : " ^ string_of_expr e3 ^ ")"
   | MapUpd(e1,e2,e3) -> string_of_expr e1 ^ "[" ^ string_of_expr e2 ^ "->" ^ string_of_expr e3 ^ "]"
+
+and bool_binop s1 s2 op d = addparen (s1 ^ " " ^ op ^ " " ^ s2) d
+
+and int_binop e1 e2 op d = let s1,s2 = string_of_expr e1,string_of_expr e2 in
+  addparen (s1 ^ op ^ s2) d 
 
 and string_of_cmd t = function
     Skip -> tabs t "skip;"

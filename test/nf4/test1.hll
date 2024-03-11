@@ -1,0 +1,11 @@
+// Test NF4: 2 assignments, 1 tranfers, read balance
+
+contract Test1 {
+    int x; 
+  
+    function f(address a, int y) {
+        x = x + y;
+        a.transfer(x:T);
+        x = balance(T);
+    }
+}
