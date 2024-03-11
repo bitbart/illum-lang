@@ -42,7 +42,7 @@ let rec string_of_expr e = match e with
 and bool_binop s1 s2 op d = addparen (s1 ^ " " ^ op ^ " " ^ s2) d
 
 and int_binop e1 e2 op d = let s1,s2 = string_of_expr e1,string_of_expr e2 in
-  addparen (s1 ^ op ^ s2) d 
+  addparen (s1 ^ op ^ (if op="+" then s2 else addparen s2 1)) d 
 
 and string_of_cmd t = function
     Skip -> tabs t "skip;"

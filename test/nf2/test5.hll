@@ -7,16 +7,14 @@ contract Test5 {
     function f(int x) {
         m[x+y] = x;
         m[5] = m[7];
-
-    /* 
-    step 1:
-    m_0,y_0,x_0 = m,y,x;      // SimAssign
-    m_1 = upd(m_0, x_0+y_0, x_0);
-    m_2 = upd(m_1, 5, m_1[7]);
-    m,y = m_2,y_0; 
-    
-    step 2:
-    m,y = upd(upd(m_0, x_0+y_0, x_0), 5, upd(m_0, x_0+y_0, x_0)[7]), y_0;
-    */       
     }
+
+    /*
+    function f(int x) {
+        m_0,y_0,x_0 |= m,y,x;
+        m_1 |= m_0[x_0+y_0->x_0];
+        m_2 |= m_1[5->m_1[7]];
+        m,y |= m_2,y_0;
+    }
+    */
 }

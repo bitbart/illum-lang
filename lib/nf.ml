@@ -83,7 +83,7 @@ let bexpr_of_if_req bl = List.fold_left
   (fun (breq,bif) (ei,ci) -> 
     (Or(breq,(match ci with
     | ReqNF(er)::_ -> And(bif, And(ei,er))
-    | _ -> True))),
+    | _ -> And(bif,ei)))),
     And(bif,Not ei)
   )
   (False,True)
@@ -325,12 +325,14 @@ let collapse_simassign2 c1 c2 = match (c1,c2) with
 | _ -> failwith "collapse_simassign2: should never happen"
 
 let collapse_simassign cl = match List.rev cl with
-| [] -> failwith "collapse_simassign: should never happen"
+| [] -> SimAssign []
 | c::cl' -> List.fold_left (fun c1 c2 -> collapse_simassign2 c1 c2) c cl'
 
-let nf4_cmd cl = 
-  (List.filter (fun c -> not (is_simassign c)) cl) @
-  [collapse_simassign (List.filter is_simassign cl)] 
+let rec nf4_cmd = function
+| [ReqNF er; IfNF bl] -> [ ReqNF er; IfNF (List.map (fun (ei,ci) -> (ei,nf4_cmd ci)) bl)]
+| [IfNF bl] -> [IfNF (List.map (fun (ei,ci) -> (ei,nf4_cmd ci)) bl)]
+| cl -> (List.filter (fun c -> not (is_simassign c)) cl) @
+        [collapse_simassign (List.filter is_simassign cl)] 
 
 let nf4_fun = function
   | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf4_cmd c,nl) 

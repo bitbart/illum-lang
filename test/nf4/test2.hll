@@ -1,0 +1,18 @@
+// Test NF4: 1 assignment, 1 tranfer
+
+contract Test2 {
+    int x; 
+  
+    function f(address a, int y) input(1:T) {
+        if (y > 5) {
+            x = balance(T) - 1;
+            a.transfer(x:T);
+            x = balance(T);
+            require x > 5;
+        } else {
+            a.transfer(balance(T)-4 :T);
+            x = 10;
+            // require true;
+        }
+    }
+}
