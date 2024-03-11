@@ -1,4 +1,4 @@
-// Test NF3: assignments, tranfers
+// Test NF3: 1 assignment, 1 tranfer
 
 contract Test0 {
     int x; 

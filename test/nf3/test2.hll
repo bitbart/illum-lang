@@ -5,8 +5,8 @@ contract Test2 {
   
     function f(address a, int y) {
         x = x + y;
+        x = x + balance(T);
         a.transfer(x:T);
         require(x>5 && balance(T)>7);
-        x = x + balance(T);
     }
 }
