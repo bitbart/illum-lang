@@ -49,7 +49,7 @@ and args = arg list
 type fmod = 
 | AuthFMod of ide
 | AfterFMod of expr
-| InputFMod of (expr * tok) list
+| InputFMod of expr * tok
 
 and fmods = EmptyFMods | FModSeq of fmod * fmods 
 
@@ -75,17 +75,21 @@ type contract = Contract of ide * var_decls * fun_decls
 type cmdNF1 = 
 | SkipNF
 | VarAssignNF of ide * expr
-(* | MapAssignNF of ide * expr * expr *)
 | XferNF of expr * expr * tok
 | ReqNF of expr
 | IfNF of (expr * cmdNF) list
-(* problema: in SimAssign mancano le mappe! *)
 | SimAssign of (ide * expr) list (* simultaneous assignment - non produced by the parser *)
 and cmdNF = cmdNF1 list
 
+type fmodsNF = { 
+  auths : ide list;
+  afters: expr list;
+  inputs: (expr * tok) list 
+}
+
 type fun_declNF =
-  | ConstrNF of args * fmods * cmdNF * (ide list)
-  | ProcNF of ide * args * fmods * cmdNF * (ide list)           
+  | ConstrNF of args * fmodsNF * cmdNF * (ide list)
+  | ProcNF of ide * args * fmodsNF * cmdNF * (ide list)           
 
 type fun_declsNF = EmptyFunDeclsNF | FunDeclSeqNF of fun_declNF * fun_declsNF
 

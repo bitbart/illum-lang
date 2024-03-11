@@ -139,7 +139,7 @@ tokval:
 fmod:
   | AUTH; LPAREN; x = ID; RPAREN; { AuthFMod(x) }
   | AFTER; LPAREN; e = expr; RPAREN; { AfterFMod(e) }
-  | INPUT; LPAREN; etl = separated_list(ARGSEP, tokval) RPAREN; { InputFMod(etl) }
+  | INPUT; LPAREN; e = expr; TOKSEP; t = ID; RPAREN; { InputFMod(e,t) }
 
 fmods: 
   | fm = fmod; { FModSeq(fm,EmptyFMods) }

@@ -18,9 +18,20 @@ let rec cmdNF_of_cmd = function
   | c2' -> [IfNF [(e,c1');(True,c2')]])
 | Seq(c1,c2) -> (cmdNF_of_cmd c1) @ (cmdNF_of_cmd c2) 
 
+let fmodsNF_of_fmods fml = 
+  let rec fmodsNF_of_fmods_rec = function
+    | EmptyFMods -> [] 
+    | FModSeq(f,m') -> f::(fmodsNF_of_fmods_rec m') in
+  let fml' = fmodsNF_of_fmods_rec fml in 
+{ 
+  auths  = List.fold_left (fun l m -> match m with AuthFMod x -> x::l | _ -> l) [] fml';
+  afters = List.fold_left (fun l m -> match m with AfterFMod e -> e::l | _ -> l) [] fml';
+  inputs = List.fold_left (fun l m -> match m with InputFMod(e,t) -> (e,t)::l | _ -> l) [] fml';
+}
+
 let fun_declNF_of_fun_decl = function
-  | Constr(x,vl,c,nl) -> ConstrNF(x,vl,cmdNF_of_cmd c,nl)
-  | Proc(x,vl,rl,c,nl) -> ProcNF(x,vl,rl,cmdNF_of_cmd c,nl)
+  | Constr(xl,fml,c,nl) -> ConstrNF(xl,fmodsNF_of_fmods fml,cmdNF_of_cmd c,nl)
+  | Proc(f,xl,fml,c,nl) -> ProcNF(f,xl,fmodsNF_of_fmods fml,cmdNF_of_cmd c,nl)
 
 let rec fun_declsNF_of_fun_decls = function
   | EmptyFunDecls -> EmptyFunDeclsNF

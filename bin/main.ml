@@ -1,6 +1,7 @@
 open IllumLib.Utils
 open IllumLib.Prettyprint
 open IllumLib.Nf
+open IllumLib.Hllc
        
 (* read file, and output it to a string *)
 
@@ -28,16 +29,20 @@ let _ = match Array.length(Sys.argv) with
     | s -> s |> parse |> nf0 |> is_nf1 |> string_of_bool |> print_endline)
 (* converto to NF1 / read input from file *) 
 | 3 when Sys.argv.(1)="nf1" -> (match read_file Sys.argv.(2) with
-      "" -> print_newline()
-    | s -> s |> parse |> nf0 |> nf1 |> string_of_contractNF |> print_endline)
+  | "" -> print_newline()
+  | s -> s |> parse |> nf0 |> nf1 |> string_of_contractNF |> print_endline)
 | 3 when Sys.argv.(1)="nf2" -> (match read_file Sys.argv.(2) with
-    "" -> print_newline()
+  | "" -> print_newline()
   | s -> s |> parse |> nf0 |> nf1 |> nf2 |> string_of_contractNF |> print_endline)
 | 3 when Sys.argv.(1)="nf3" -> (match read_file Sys.argv.(2) with
-  "" -> print_newline()
-| s -> s |> parse |> nf0 |> nf1 |> nf2 |> nf3 |> string_of_contractNF |> print_endline)
+  | "" -> print_newline()
+  | s -> s |> parse |> nf0 |> nf1 |> nf2 |> nf3 |> string_of_contractNF |> print_endline)
 | 3 when Sys.argv.(1)="nf4" -> (match read_file Sys.argv.(2) with
-  "" -> print_newline()
-| s -> s |> parse |> nf0 |> nf1 |> nf2 |> nf3 |> nf4 |> string_of_contractNF |> print_endline)
+  | "" -> print_newline()
+  | s -> s |> parse |> nf0 |> nf1 |> nf2 |> nf3 |> nf4 |> string_of_contractNF |> print_endline)
+| 3 when Sys.argv.(1)="hllc" -> (match read_file Sys.argv.(2) with
+  | "" -> print_newline()
+  | s -> s |> parse |> hllc |> List.fold_left (fun s c -> s ^ string_of_clause c) "" |> print_endline)
+
 (* wrong usage *)      
 | _ -> failwith "Usage: dune exec illum [parse] [filename]"

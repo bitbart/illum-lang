@@ -82,8 +82,8 @@ let string_of_var_decl = function
 
 let string_of_fmod = function
   | AuthFMod(x)-> "auth(" ^ x ^ ")"
-  | AfterFMod(e) -> "after(" ^ (string_of_expr e) ^ ")"
-  | InputFMod(etl) -> "input(" ^ (List.fold_left (fun s (e,t) -> s ^ (if s<>"" then "," else "") ^ (string_of_expr e) ^ ":" ^ t) "" etl) ^ ")"
+  | AfterFMod(e) -> "after(" ^ string_of_expr e ^ ")"
+  | InputFMod(e,t) -> "input(" ^ string_of_expr e ^ ":" ^ t ^ ")"
 
 let rec string_of_fmods = function
   | EmptyFMods -> ""
@@ -119,7 +119,7 @@ let string_of_contract (Contract(c,vdl,fdl)) =
 
 
 (******************************************************************************)
-(*                        Pretty-printing of NF0 contracts                    *)
+(*                        Pretty-printing of NF contracts                     *)
 (******************************************************************************)
 
 let rec string_of_cmdNF1 t = function
@@ -158,14 +158,24 @@ let rec string_of_cmdNF1 t = function
       ";")
 
 and string_of_cmdNF t cl = List.fold_left (fun s c -> s ^ (if s<>"" then "\n" else "") ^ (string_of_cmdNF1 t c)) "" cl
-  
+
+let string_of_fmodsNF (m: fmodsNF) : string =
+  (if m.auths = [] then "" 
+  else " auth("  ^ (List.fold_left (fun s x -> s ^ (if s<>"" then "," else "") ^ x) "" (m.auths)) ^ ")")
+  ^
+  (if m.afters = [] then "" 
+  else " after(" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ (string_of_expr e)) "" (m.afters)) ^ ")")
+  ^
+  (if m.inputs = [] then ""
+  else " input(" ^ (List.fold_left (fun s (e,t) -> s ^ (if s<>"" then "," else "") ^ (string_of_expr e) ^ ":" ^ t) "" (m.inputs)) ^ ")")
+
 let string_of_fun_declNF = function
   | ConstrNF(a,fml,c,nl) -> 
-    "\n" ^ tabs 1 ("constructor" ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmods fml) ^ " {\n") ^ 
+    "\n" ^ tabs 1 ("constructor" ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmodsNF fml) ^ " {\n") ^ 
       (if c=[] then "" else (string_of_cmdNF 2 c) ^ "\n") ^ 
     tabs 1 "}" ^ (string_of_nexts nl)                
   | ProcNF(f,a,fml,c,nl) -> 
-    "\n" ^ tabs 1 ("function " ^ f ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmods fml) ^ " {\n") ^ 
+    "\n" ^ tabs 1 ("function " ^ f ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmodsNF fml) ^ " {\n") ^ 
       (if c=[] then "" else (string_of_cmdNF 2 c) ^ "\n") ^
     tabs 1 "}" ^ (string_of_nexts nl)
 
@@ -176,6 +186,55 @@ let rec string_of_fun_declsNF = function
 let string_of_contractNF = function ContractNF(c,vdl,fdl) -> 
   "contract " ^ c ^ " { " ^ (string_of_var_decls vdl) ^ (string_of_fun_declsNF fdl) ^ " }"
 
+(******************************************************************************)
+(*                        Pretty-printing ILLUM clauses                       *)
+(******************************************************************************)
+
+let string_of_decorators d = 
+  (if d.auth = [] then ""
+  else "auth(" ^ (List.fold_left (fun s x -> s ^ (if s<>"" then "," else "") ^ x) "" d.auth) ^ "), ") 
+  ^
+  (if d.auth = [] then ""
+  else "afterAbs(" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" d.afterAbs) ^ "), ")
+  ^
+  (if d.auth = [] then ""
+  else "afterRel(" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" d.afterRel) ^ ")")
+
+let rec string_of_contrD = function
+  | Call l -> 
+    "call(" ^ (List.fold_left (fun s (x,el) -> s ^ (if s<>"" then "," else "") ^ x ^ "(" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" el) ^ ")") "" l) ^ ")"
+  | Send(e,t,x) -> "send(" ^ (string_of_expr e) ^ ":" ^ t ^ "->" ^ x ^ ")"
+
+and string_of_contrC l = List.fold_left 
+  (fun s c -> s ^ (if s<>"" then "," else "") ^ 
+    let s = string_of_decorators (fst c) in (if s="" then "" else ":") ^ 
+    string_of_contrD (snd c)) 
+  "" l 
+
+let string_of_wallet w = "wallet: " ^
+  List.fold_left (fun s (e,t) -> s ^ (if s<>"" then "," else "") ^ string_of_expr e ^ ":" ^ t) "" w
+
+let string_of_prep e = "require: " ^ string_of_expr e
+
+let string_of_clause (c:clause) = 
+  "clause " ^ c.name ^ 
+  "(" ^ 
+  (List.fold_left (fun s x -> s ^ (if s<>"" then "," else "") ^ x) "" c.spar) ^ "; " ^ 
+  (List.fold_left (fun s x -> s ^ (if s<>"" then "," else "") ^ x) "" c.dpar) ^ ") {\n" ^
+  tabs 1 (string_of_wallet c.walp) ^ "\n" ^
+  tabs 1 (string_of_prep c.prep) ^ "\n" ^
+  tabs 1 "branch: \n" ^
+  tabs 2 (string_of_contrC c.cntr) ^ 
+  "\n}"
+
+(*
+  name: ide;               (* X = clause name *)
+  spar: ide list;          (* alpha = static parameters *)
+  dpar: ide list;          (* beta = dynamic parameters *)
+  walp: (expr * tok) list; (* (e:T, ...) = wallet in the funding precondition *)
+  prep: expr;              (* p = boolean precondition *) 
+  cntr: contrC             (* contract code *)
+*)
 
 (******************************************************************************)
 (*                        Pretty-printing HeLLUM semantics                    *)
@@ -222,7 +281,3 @@ let rec string_of_trace vars = function
   | [x] -> (string_of_conf vars x)
   | x::l -> (string_of_conf vars x) ^ "\n -> " ^ string_of_trace vars l
 
-let rec last = function
-    [] -> failwith "last on empty list"
-  | [x] -> x
-  | _::l -> last l
