@@ -11,9 +11,10 @@ let string_of_val = function
 
 let rec tabs (t:int) (s:string) = if t=0 then s else tabs (t-1) ("  " ^ s) 
 
-let addparen s d = if d>1 then "(" ^ s ^ ")" else s
+let addparen s d = if d>0 then "(" ^ s ^ ")" else s
 
-let binop s1 s2 op d = addparen (s1 ^ op ^ s2) d
+let bool_binop s1 s2 op d = addparen (s1 ^ " " ^ op ^ " " ^ s2) d
+let int_binop s1 s2 op d = addparen (s1 ^ op ^ s2) d
 
 let rec string_of_expr e = match e with
     True -> "true"
@@ -23,19 +24,19 @@ let rec string_of_expr e = match e with
   | IntConst n -> string_of_int n
   | AddrConst n -> "address(" ^ string_of_int n ^ ")"
   | StringConst s -> "\"" ^ s ^ "\""
-  | Not e -> "!" ^ string_of_expr e
-  | And(e1,e2) -> binop (string_of_expr e1) (string_of_expr e2) "&&" (depth_expr e)
-  | Or(e1,e2)  -> binop (string_of_expr e1) (string_of_expr e2) "||" (depth_expr e)
-  | Add(e1,e2) -> binop (string_of_expr e1) (string_of_expr e2) "+" (depth_expr e)
-  | Sub(e1,e2) -> binop (string_of_expr e1) (string_of_expr e2) "-" (depth_expr e)
-  | Mul(e1,e2) -> binop (string_of_expr e1) (string_of_expr e2) "*" (depth_expr e)
-  | Div(e1,e2) -> binop (string_of_expr e1) (string_of_expr e2) "/" (depth_expr e)
-  | Eq(e1,e2)  -> binop (string_of_expr e1) (string_of_expr e2) "==" (depth_expr e)
-  | Neq(e1,e2) -> binop (string_of_expr e1) (string_of_expr e2) "!=" (depth_expr e)
-  | Leq(e1,e2) -> binop (string_of_expr e1) (string_of_expr e2) "<=" (depth_expr e)
-  | Le(e1,e2)  -> binop (string_of_expr e1) (string_of_expr e2) "<" (depth_expr e)
-  | Geq(e1,e2) -> binop (string_of_expr e1) (string_of_expr e2) ">=" (depth_expr e)
-  | Ge(e1,e2)  -> binop (string_of_expr e1) (string_of_expr e2) ">" (depth_expr e)
+  | Not e -> "!(" ^ string_of_expr e ^ ")"
+  | And(e1,e2) -> bool_binop (string_of_expr e1) (string_of_expr e2) "&&" (depth_expr e)
+  | Or(e1,e2)  -> bool_binop (string_of_expr e1) (string_of_expr e2) "||" (depth_expr e)
+  | Add(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) "+" (depth_expr e)
+  | Sub(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) "-" (depth_expr e)
+  | Mul(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) "*" (depth_expr e)
+  | Div(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) "/" (depth_expr e)
+  | Eq(e1,e2)  -> int_binop (string_of_expr e1) (string_of_expr e2) "==" (depth_expr e)
+  | Neq(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) "!=" (depth_expr e)
+  | Leq(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) "<=" (depth_expr e)
+  | Le(e1,e2)  -> int_binop (string_of_expr e1) (string_of_expr e2) "<" (depth_expr e)
+  | Geq(e1,e2) -> int_binop (string_of_expr e1) (string_of_expr e2) ">=" (depth_expr e)
+  | Ge(e1,e2)  -> int_binop (string_of_expr e1) (string_of_expr e2) ">" (depth_expr e)
   | Bal(t)     -> "balance(" ^ t ^ ")"
   | BalPre(t)  -> "balance_pre(" ^ t ^ ")"  
   | IfE(e1,e2,e3) -> "(" ^ string_of_expr e1 ^ " ? " ^ string_of_expr e2 ^ " : " ^ string_of_expr e3 ^ ")"
@@ -119,7 +120,7 @@ let string_of_contract (Contract(c,vdl,fdl)) =
 let rec string_of_cmdNF1 t = function
   | SkipNF -> tabs t "skip;"
   | VarAssignNF(x,e) -> tabs t (x ^ "=" ^ string_of_expr e ^ ";")
-  | SendNF(x,e,tok) -> tabs t (x ^ ".transfer(" ^ (string_of_expr e) ^ ":" ^ tok ^ ");")
+  | SendNF(a,e,tok) -> tabs t (string_of_expr a ^ ".transfer(" ^ (string_of_expr e) ^ ":" ^ tok ^ ");")
   | ReqNF(e) -> tabs t ("require " ^ string_of_expr e ^ ";")
   | IfNF [] -> failwith "should never happen"
   | IfNF [(e,c1)] -> 

@@ -1,0 +1,31 @@
+// Test NF1: bug?
+
+contract Test11 {
+    int n; 
+    int m;
+
+    constructor() { }
+    
+    function add(int i, string op) { 
+        if (op=="plus") {
+            n=n+i; 
+            m=0;
+        }
+        else { 
+            if (m==0 && !(n>0 || n<=5)) {
+                n=0;
+                m=1; 
+            }
+            else
+                n=n-i;
+            
+            if (n>0)
+                n=n-i; 
+            m=m+1;
+        } 
+    }
+    function withdraw(address a, int amount) {
+        require(amount > 0);
+        a.transfer(amount:T);
+    }
+}

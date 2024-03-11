@@ -1,29 +1,10 @@
-contract Test2 {
-    int n; 
-    int m;
+// Test NF1: pull_assign_req
 
-    constructor() { }
+contract Test2 {
+    uint n;
     
-    function add(int i, string op) { 
-        if (op=="plus") {
-            n=n+i; 
-            m=0;
-        }
-        else { 
-            if (m==0 && !(n>0 || n<=5)) {
-                n=0;
-                m=1; 
-            }
-            else
-                n=n-i;
-            
-            if (n>0)
-                n=n-i; 
-            m=m+1;
-        } 
-    }
-    function withdraw(address a, int amount) {
-        require(amount > 0);
-        a.transfer(amount:T);
+    function f() {
+        n = n+1;
+        require(n>0); 
     }
 }

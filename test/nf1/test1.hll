@@ -1,3 +1,5 @@
+// Test NF1: push_assign_if
+
 contract Test1 {
     int n; 
     int m;

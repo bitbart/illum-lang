@@ -80,7 +80,7 @@ and vars_of_cmd1 = function
   | VarAssignNF(x,e) -> union [x] (vars_of_expr e)
   (* | MapAssignNF(x,e1,e2) -> union [x] (union (vars_of_expr e1) (vars_of_expr e2)) *)
   | IfNF bl -> List.fold_left (fun tl (e,cl) -> union tl (union (vars_of_expr e) (vars_of_cmd cl))) [] bl
-  | SendNF(x,e,_) -> union [x] (vars_of_expr e)
+  | SendNF(a,e,_) -> union (vars_of_expr a) (vars_of_expr e)
   | ReqNF e -> vars_of_expr e                    
   | SimAssign _ -> failwith "vars_of_cmd1: SimAssign"
 and vars_of_cmd cl = List.fold_left (fun tl c -> union tl (vars_of_cmd1 c)) [] cl
@@ -146,3 +146,97 @@ let rec toks_of_fun_decls = function
 | FunDeclSeqNF(f,fl) -> union (toks_of_fun f) (toks_of_fun_decls fl)
 
 let toks_of_contract = function ContractNF(_,_,fdl) -> toks_of_fun_decls fdl
+
+(******************************************************************************)
+(*                      Substitute variable in expression                     *)
+(******************************************************************************)
+
+(* subst_var x e e' replaces all the occurrences of base variable x in e' with e *)
+let rec subst_var x e = function
+| True -> True
+| False -> False
+| Var y when y=x -> e
+| Var y -> Var y
+| Map(e1,e2) -> Map(subst_var x e e1,subst_var x e e2)
+| IntConst n -> IntConst n
+| AddrConst n -> AddrConst n
+| StringConst s -> StringConst s
+| Not e1 -> Not (subst_var x e e1)
+| And(e1,e2) -> And(subst_var x e e1,subst_var x e e2)
+| Or(e1,e2) -> Or(subst_var x e e1,subst_var x e e2)
+| Add(e1,e2) -> Add(subst_var x e e1,subst_var x e e2)
+| Sub(e1,e2) -> Sub(subst_var x e e1,subst_var x e e2)
+| Mul(e1,e2) -> Mul(subst_var x e e1,subst_var x e e2)
+| Div(e1,e2) -> Div(subst_var x e e1,subst_var x e e2)
+| Eq(e1,e2) -> Eq(subst_var x e e1,subst_var x e e2)
+| Neq(e1,e2) -> Neq(subst_var x e e1,subst_var x e e2)
+| Leq(e1,e2) -> Leq(subst_var x e e1,subst_var x e e2)
+| Le(e1,e2) -> Le(subst_var x e e1,subst_var x e e2) 
+| Geq(e1,e2) -> Geq(subst_var x e e1,subst_var x e e2)
+| Ge(e1,e2) -> Ge(subst_var x e e1,subst_var x e e2)
+| Bal(t) -> Bal(t)
+| BalPre(t) -> BalPre(t)
+| IfE(e1,e2,e3) -> IfE(subst_var x e e1,subst_var x e e2,subst_var x e e3)
+| MapUpd(e1,e2,e3) -> MapUpd(subst_var x e e1,subst_var x e e2,subst_var x e e3)
+
+(******************************************************************************)
+(*                      Substitute balance in expression                      *)
+(******************************************************************************)
+
+(* subst_bal t e e' replaces all the occurrences of Bal(t) in e' with e *)
+let rec subst_bal t (e:expr) = function
+| Bal(t') when t'=t -> e
+| Bal(t')    -> Bal(t')                  
+| Map(y,e')  -> Map(y,subst_bal t e e')
+| Not e1     -> Not(subst_bal t e e1)
+| And(e1,e2) -> And(subst_bal t e e1,subst_bal t e e2)
+| Or(e1,e2)  -> Or (subst_bal t e e1,subst_bal t e e2)
+| Add(e1,e2) -> Add(subst_bal t e e1,subst_bal t e e2)
+| Sub(e1,e2) -> Sub(subst_bal t e e1,subst_bal t e e2)
+| Mul(e1,e2) -> Mul(subst_bal t e e1,subst_bal t e e2)
+| Div(e1,e2) -> Div(subst_bal t e e1,subst_bal t e e2)
+| Eq(e1,e2)  -> Eq (subst_bal t e e1,subst_bal t e e2)
+| Neq(e1,e2) -> Neq(subst_bal t e e1,subst_bal t e e2)
+| Leq(e1,e2) -> Leq(subst_bal t e e1,subst_bal t e e2)
+| Le(e1,e2)  -> Le (subst_bal t e e1,subst_bal t e e2) 
+| Geq(e1,e2) -> Geq(subst_bal t e e1,subst_bal t e e2)
+| Ge(e1,e2)  -> Ge (subst_bal t e e1,subst_bal t e e2)
+| e -> e
+
+
+(******************************************************************************)
+(*              Substitute expression wrt simultaneous assignment             *)
+(******************************************************************************)
+
+let rec fun_of_list= function
+| [] -> fun x -> failwith ("fun_of_list: undefined " ^ x)
+| (a,b)::l-> let f' = fun_of_list l in fun x -> if x=a then b else f' x  
+
+(* simsubst af e applies the simultaneous assignment af to the expression e. *)
+(* If some variable in e is not assigned by af, then it is preserved *)
+
+let rec simsubst (af:ide -> expr) (e:expr) : expr = match e with
+| True -> True
+| False -> False
+| Var x -> (try af x with _ -> Var x)
+| Map(e1,e2) -> Map(simsubst af e1,simsubst af e2)
+| IntConst n -> IntConst n
+| AddrConst n -> AddrConst n
+| StringConst s -> StringConst s
+| Not e1 -> Not (simsubst af e1)
+| And(e1,e2) -> And(simsubst af e1,simsubst af e2)
+| Or(e1,e2) ->  Or (simsubst af e1,simsubst af e2)
+| Add(e1,e2) -> Add(simsubst af e1,simsubst af e2)
+| Sub(e1,e2) -> Sub(simsubst af e1,simsubst af e2)
+| Mul(e1,e2) -> Mul(simsubst af e1,simsubst af e2)
+| Div(e1,e2) -> Div(simsubst af e1,simsubst af e2)
+| Eq(e1,e2) ->  Eq (simsubst af e1,simsubst af e2)
+| Neq(e1,e2) -> Neq(simsubst af e1,simsubst af e2)
+| Leq(e1,e2) -> Leq(simsubst af e1,simsubst af e2)
+| Le(e1,e2) ->  Le (simsubst af e1,simsubst af e2) 
+| Geq(e1,e2) -> Geq(simsubst af e1,simsubst af e2)
+| Ge(e1,e2) ->  Ge (simsubst af e1,simsubst af e2)
+| Bal(t) -> Bal(t)
+| BalPre(t) -> BalPre(t)
+| IfE(e1,e2,e3)    -> IfE   (simsubst af e1,simsubst af e2,simsubst af e3)
+| MapUpd(e1,e2,e3) -> MapUpd(simsubst af e1,simsubst af e2,simsubst af e3)

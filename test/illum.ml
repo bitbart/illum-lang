@@ -25,7 +25,7 @@ let%test "is_nf1_test1" = test_is_nf1 false "nf1/test1.hll"
 
 let%test "nf1_test0" = test_nf1 "nf1/test0.hll"
 let%test "nf1_test1" = test_nf1 "nf1/test1.hll"
-(* let%test "nf1_test2" = test_nf1 "nf1/test2.hll" *)
+let%test "nf1_test2" = test_nf1 "nf1/test2.hll"
 let%test "nf1_test3" = test_nf1 "nf1/test3.hll"
 let%test "nf1_test4" = test_nf1 "nf1/test4.hll"
 let%test "nf1_test5" = test_nf1 "nf1/test5.hll"
@@ -33,7 +33,8 @@ let%test "nf1_test6" = test_nf1 "nf1/test6.hll"
 let%test "nf1_test7" = test_nf1 "nf1/test7.hll"
 let%test "nf1_test8" = test_nf1 "nf1/test8.hll"
 let%test "nf1_test9" = test_nf1 "nf1/test9.hll"
-
+let%test "nf1_test10" = test_nf1 "nf1/test10.hll"
+(* let%test "nf1_test11" = test_nf1 "nf1/test11.hll" *)
 
 (******************************************************************************)
 (*                                       NF2                                  *)
@@ -48,3 +49,18 @@ let%test "nf2_test1" = test_nf2 "nf2/test1.hll"
 let%test "nf2_test2" = test_nf2 "nf2/test2.hll"
 let%test "nf2_test3" = test_nf2 "nf2/test3.hll"
 let%test "nf2_test4" = test_nf2 "nf2/test4.hll"
+let%test "nf2_test5" = test_nf2 "nf2/test5.hll"
+
+(******************************************************************************)
+(*                                       NF3                                  *)
+(******************************************************************************)
+
+let test_nf3 fname = match read_file fname with
+  "" -> false
+| s -> s |> parse |> nf0 |> nf1 |> nf2 |> nf3 |> is_nf3
+
+let%test "nf3_test0" = test_nf2 "nf3/test0.hll"
+let%test "nf3_test1" = test_nf2 "nf3/test1.hll"
+let%test "nf3_test2" = test_nf2 "nf3/test2.hll"
+let%test "nf3_test3" = test_nf2 "nf3/test3.hll"
+let%test "nf3_test4" = test_nf2 "nf3/test4.hll"

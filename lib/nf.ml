@@ -10,7 +10,7 @@ let rec cmdNF_of_cmd = function
 | Skip -> []
 | VarAssign(x,e) -> [VarAssignNF(x,e)]
 (* | MapAssign(x,e1,e2) -> [MapAssignNF(x,e1,e2)] *)
-| Send(x,e,tok) -> [SendNF(x,e,tok)]
+| Send(x,e,tok) -> [SendNF(Var x,e,tok)]
 | Req(e) -> [ReqNF(e)]
 | If(e,c1,c2) -> let c1' = cmdNF_of_cmd c1 in 
   (match cmdNF_of_cmd c2 with
@@ -55,54 +55,6 @@ let rec list_of_fun_decls = function
 
 let is_nf1 = function
   ContractNF(_,_,fdl) -> List.for_all is_nf1_fun (list_of_fun_decls fdl)
-
-(* subst_var x e e' replaces all the occurrences of base variable x in e' with e *)
-let rec subst_var x e = function
-| True -> True
-| False -> False
-| Var y when y=x -> e
-| Var y -> Var y
-| Map(e1,e2) -> Map(subst_var x e e1,subst_var x e e2)
-| IntConst n -> IntConst n
-| AddrConst n -> AddrConst n
-| StringConst s -> StringConst s
-| Not e1 -> Not (subst_var x e e1)
-| And(e1,e2) -> And(subst_var x e e1,subst_var x e e2)
-| Or(e1,e2) -> Or(subst_var x e e1,subst_var x e e2)
-| Add(e1,e2) -> Add(subst_var x e e1,subst_var x e e2)
-| Sub(e1,e2) -> Sub(subst_var x e e1,subst_var x e e2)
-| Mul(e1,e2) -> Mul(subst_var x e e1,subst_var x e e2)
-| Div(e1,e2) -> Div(subst_var x e e1,subst_var x e e2)
-| Eq(e1,e2) -> Eq(subst_var x e e1,subst_var x e e2)
-| Neq(e1,e2) -> Neq(subst_var x e e1,subst_var x e e2)
-| Leq(e1,e2) -> Leq(subst_var x e e1,subst_var x e e2)
-| Le(e1,e2) -> Le(subst_var x e e1,subst_var x e e2) 
-| Geq(e1,e2) -> Geq(subst_var x e e1,subst_var x e e2)
-| Ge(e1,e2) -> Ge(subst_var x e e1,subst_var x e e2)
-| Bal(t) -> Bal(t)
-| BalPre(t) -> BalPre(t)
-| IfE(e1,e2,e3) -> IfE(subst_var x e e1,subst_var x e e2,subst_var x e e3)
-| MapUpd(e1,e2,e3) -> MapUpd(subst_var x e e1,subst_var x e e2,subst_var x e e3)
-
-(* subst_bal t e e' replaces all the occurrences of Bal(t) in e' with e *)
-let rec subst_bal t (e:expr) = function
-| Bal(t') when t'=t -> e
-| Bal(t')    -> Bal(t')                  
-| Map(y,e')  -> Map(y,subst_bal t e e')
-| Not e1     -> Not(subst_bal t e e1)
-| And(e1,e2) -> And(subst_bal t e e1,subst_bal t e e2)
-| Or(e1,e2)  -> Or (subst_bal t e e1,subst_bal t e e2)
-| Add(e1,e2) -> Add(subst_bal t e e1,subst_bal t e e2)
-| Sub(e1,e2) -> Sub(subst_bal t e e1,subst_bal t e e2)
-| Mul(e1,e2) -> Mul(subst_bal t e e1,subst_bal t e e2)
-| Div(e1,e2) -> Div(subst_bal t e e1,subst_bal t e e2)
-| Eq(e1,e2)  -> Eq (subst_bal t e e1,subst_bal t e e2)
-| Neq(e1,e2) -> Neq(subst_bal t e e1,subst_bal t e e2)
-| Leq(e1,e2) -> Leq(subst_bal t e e1,subst_bal t e e2)
-| Le(e1,e2)  -> Le (subst_bal t e e1,subst_bal t e e2) 
-| Geq(e1,e2) -> Geq(subst_bal t e e1,subst_bal t e e2)
-| Ge(e1,e2)  -> Ge (subst_bal t e e1,subst_bal t e e2)
-| e -> e
 
 let nf1_push_assign_if = function
 | (VarAssignNF(x,e), IfNF bl) -> IfNF(List.map (fun (ei,ci) -> (subst_var x e ei,VarAssignNF(x,e)::ci)) bl)
@@ -156,10 +108,10 @@ let rec nf1_cmd = function
 | VarAssignNF(x,e)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_assign_req (VarAssignNF(x,e), ReqNF(er)))@cl)
 | SendNF(a,e,t)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_send_req (SendNF(a,e,t), ReqNF(er)))@cl)
 | ReqNF(e1)::ReqNF(e2)::cl -> nf1_cmd (ReqNF(And(e1,e2))::cl)
-| SendNF(x,e,t)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_send_if (SendNF(x,e,t), IfNF(bl)))::cl)
+| SendNF(a,e,t)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_send_if (SendNF(a,e,t), IfNF(bl)))::cl)
 | IfNF(bl)::c::cl -> nf1_cmd ((nf1_push_if_cmd (IfNF(bl),c))::cl)
 | c::cl -> nf1_cmd (c::nf1_cmd cl)
-| _ -> failwith "nf1_cmd"
+| _ -> failwith "nf1_cmd: should never happen"
 
 let nf1_fun = function
   | ConstrNF(a,fml,c,nl) -> ConstrNF(a,fml,nf1_cmd c,nl) 
@@ -241,11 +193,11 @@ let ssa_rw_expr st e =
 
 let ssa_rw_cmd1 st = function
 | VarAssignNF(x,e) -> let st' = ssa_inc st x in ([SimAssign [ssa_var st' x, ssa_rw_expr st e]], st')
-| SendNF(x,e,t) -> let st' = ssa_inc st t in 
+| SendNF(a,e,t) -> let st' = ssa_inc st t in 
   let e' = Sub(Bal(t),e) in
   (
     [
-    SendNF(ssa_var st x,ssa_rw_expr st e,t);
+    SendNF(ssa_rw_expr st a,ssa_rw_expr st e,t);
     SimAssign([ssa_tok st' t, ssa_rw_expr st e'])
     ], 
     st'
@@ -305,19 +257,28 @@ let rec is_nf3_send = function
 
 let is_nf3_cmd = function
 | [IfNF bl]
-| [ReqNF(_);IfNF bl] -> List.fold_left (fun b (_,c) -> b && is_nf3_send c) true bl
+| [ReqNF(_);IfNF bl] -> bl |> List.map snd |> List.for_all is_nf3_send 
 | ReqNF(_)::cl -> is_nf3_send cl
 | cl -> is_nf3_send cl
+
+let is_nf3_fun = function
+  | ConstrNF(_,_,c,_) 
+  | ProcNF(_,_,_,c,_) -> is_nf3_cmd c
+
+let is_nf3 = function
+  ContractNF(_,_,fdl) -> List.for_all is_nf3_fun (list_of_fun_decls fdl)
 
 let rec nf3_cmd = function
 | c when is_nf3_cmd c -> c
 | ReqNF(e)::cl -> ReqNF(e)::(nf3_cmd cl)
 | SendNF(a,e,t)::cl -> SendNF(a,e,t)::(nf3_cmd cl)
 (* TODO: adjust expressions! *)
-| SimAssign(al)::SendNF(a,e,t)::cl -> SendNF(a,e,t)::(nf3_cmd (SimAssign(al)::cl))
-| [IfNF _] -> failwith "nf3_cmd: if case not implemented" 
+| SimAssign(al)::SendNF(a,e,t)::cl -> 
+  let af = fun_of_list al in
+  SendNF(simsubst af a,simsubst af e,t)::(nf3_cmd (SimAssign(al)::cl))
+| [IfNF bl] -> List.map (fun (ei,ci) -> (ei,nf3_cmd ci)) bl |> fun bl' -> [IfNF bl']
 | c::cl -> nf3_cmd (c::nf3_cmd cl)
-| _ -> failwith "nf3_cmd"
+| _ -> failwith "nf3_cmd: should never happen"
 
 let nf3_fun = function
   | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf3_cmd c,nl) 

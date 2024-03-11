@@ -77,7 +77,7 @@ type cmdNF1 =
 | SkipNF
 | VarAssignNF of ide * expr
 (* | MapAssignNF of ide * expr * expr *)
-| SendNF of ide * expr * tok
+| SendNF of expr * expr * tok
 | ReqNF of expr
 | IfNF of (expr * cmdNF) list
 (* problema: in SimAssign mancano le mappe! *)

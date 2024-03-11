@@ -1,0 +1,17 @@
+// Test NF3: assignments, tranfers, require, if-else
+
+contract Test4 {
+    int x; 
+  
+    function f(address a, int y) {
+        if (x>20) {
+            x = x + y;
+        }
+        else {
+            x = y;
+        }
+        a.transfer(x:T);
+        require(x>0 && balance(T)>7);
+        x = x + 1;
+    }
+}

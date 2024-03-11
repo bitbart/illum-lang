@@ -1,4 +1,8 @@
+// Test NF1: pull_assign_req
+
 contract Test3 {    
+    uint n;
+    
     function f() {
         if (n==1) n = n+1;
         require(n>0); 

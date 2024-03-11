@@ -1,10 +1,11 @@
-// Test NF3: assignments, tranfers
+// Test NF3: assignments, tranfers, require
 
-contract Test0 {
+contract Test1 {
     int x; 
   
     function f(address a, int y) {
         x = x + y;
         a.transfer(x:T);
+        x = x + balance(T);
     }
 }
