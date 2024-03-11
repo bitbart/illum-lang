@@ -92,7 +92,7 @@ cmd1:
   | x = ID; PLUSTAKES; e=expr; CMDSEP; { VarAssign(x,Add(Var(x),e)) }
   | x = ID; LBRACKET; e1 = expr; RBRACKET; TAKES; e2=expr; CMDSEP; { VarAssign(x,MapUpd(Var x,e1,e2)) }
   | x = ID; LBRACKET; e1 = expr; RBRACKET; PLUSTAKES; e2=expr; CMDSEP; { VarAssign(x,MapUpd(Var x,e1,Add(Map(Var x,e1),e2))) }
-  | x = ID; SENDSEP; SEND; LPAREN; e=expr; TOKSEP; t = ID; RPAREN; CMDSEP; { Send(x,e,t) }
+  | x = ID; SENDSEP; SEND; LPAREN; e=expr; TOKSEP; t = ID; RPAREN; CMDSEP; { Xfer(x,e,t) }
   | IF; LPAREN; e = expr; RPAREN; c1 = cmd1; { If(e,c1,Skip) }
   | IF; LPAREN; e = expr; RPAREN; LBRACE; c1 = cmd; RBRACE; { If(e,c1,Skip) }
   | IF; LPAREN; e = expr; RPAREN; c1 = cmd1; ELSE; c2 = cmd1; { If(e,c1,c2) }

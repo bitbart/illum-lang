@@ -10,7 +10,7 @@ let rec cmdNF_of_cmd = function
 | Skip -> []
 | VarAssign(x,e) -> [VarAssignNF(x,e)]
 (* | MapAssign(x,e1,e2) -> [MapAssignNF(x,e1,e2)] *)
-| Send(x,e,tok) -> [SendNF(Var x,e,tok)]
+| Xfer(x,e,tok) -> [XferNF(Var x,e,tok)]
 | Req(e) -> [ReqNF(e)]
 | If(e,c1,c2) -> let c1' = cmdNF_of_cmd c1 in 
   (match cmdNF_of_cmd c2 with
@@ -61,7 +61,7 @@ let nf1_push_assign_if = function
 | _ -> failwith "nf1_push_assign_if"
 
 let nf1_push_send_if = function
-| (SendNF(a,e,t), IfNF(bl)) -> IfNF(List.map (fun (ei,ci) -> (subst_bal t (Sub(Bal(t),e)) ei,SendNF(a,e,t)::ci)) bl)
+| (XferNF(a,e,t), IfNF(bl)) -> IfNF(List.map (fun (ei,ci) -> (subst_bal t (Sub(Bal(t),e)) ei,XferNF(a,e,t)::ci)) bl)
 | _ -> failwith "nf1_push_assign_if"
 
 let nf1_push_if_cmd = function
@@ -73,7 +73,7 @@ let nf1_pull_assign_req = function
 | _ -> failwith "nf1_pull_assign_req"
 
 let nf1_pull_send_req = function
-| (SendNF(a,e,t),ReqNF(er)) -> [ReqNF(subst_bal t (Sub(Bal(t),e)) er); SendNF(a,e,t)]
+| (XferNF(a,e,t),ReqNF(er)) -> [ReqNF(subst_bal t (Sub(Bal(t),e)) er); XferNF(a,e,t)]
 | _ -> failwith "nf1_pull_send_req: should never happen"
 
 (* bexpr_of_if_req constructs the top-level require condition. *)
@@ -106,9 +106,9 @@ let rec nf1_cmd = function
   |> fun bl1 -> [ ReqNF ( simplify_expr (bexpr_of_if_req bl1)) ; IfNF (nf1_drop_if_req bl1) ]
 | VarAssignNF(x,e)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_assign_if (VarAssignNF(x,e), IfNF bl))::cl)
 | VarAssignNF(x,e)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_assign_req (VarAssignNF(x,e), ReqNF(er)))@cl)
-| SendNF(a,e,t)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_send_req (SendNF(a,e,t), ReqNF(er)))@cl)
+| XferNF(a,e,t)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_send_req (XferNF(a,e,t), ReqNF(er)))@cl)
 | ReqNF(e1)::ReqNF(e2)::cl -> nf1_cmd (ReqNF(And(e1,e2))::cl)
-| SendNF(a,e,t)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_send_if (SendNF(a,e,t), IfNF(bl)))::cl)
+| XferNF(a,e,t)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_send_if (XferNF(a,e,t), IfNF(bl)))::cl)
 | IfNF(bl)::c::cl -> nf1_cmd ((nf1_push_if_cmd (IfNF(bl),c))::cl)
 | c::cl -> nf1_cmd (c::nf1_cmd cl)
 | _ -> failwith "nf1_cmd: should never happen"
@@ -131,7 +131,7 @@ let nf1 = function
 let is_ssa cl = List.fold_left
   (fun (b,wl) c -> match c with 
     | SimAssign al -> List.map fst al |> fun l -> (b && is_disjoint l wl, l@wl)
-    | SendNF(_,_,_) -> (b,wl)
+    | XferNF(_,_,_) -> (b,wl)
     | SkipNF -> (true,wl)
     | _ -> (false,wl)
   )
@@ -193,11 +193,11 @@ let ssa_rw_expr st e =
 
 let ssa_rw_cmd1 st = function
 | VarAssignNF(x,e) -> let st' = ssa_inc st x in ([SimAssign [ssa_var st' x, ssa_rw_expr st e]], st')
-| SendNF(a,e,t) -> let st' = ssa_inc st t in 
+| XferNF(a,e,t) -> let st' = ssa_inc st t in 
   let e' = Sub(Bal(t),e) in
   (
     [
-    SendNF(ssa_rw_expr st a,ssa_rw_expr st e,t);
+    XferNF(ssa_rw_expr st a,ssa_rw_expr st e,t);
     SimAssign([ssa_tok st' t, ssa_rw_expr st e'])
     ], 
     st'
@@ -251,7 +251,7 @@ let rec is_nf3_assign = function
 
 let rec is_nf3_send = function
 | [] -> true 
-| SendNF _ ::cl -> is_nf3_send cl
+| XferNF _ ::cl -> is_nf3_send cl
 | SimAssign _ ::cl -> is_nf3_assign cl
 | _ -> false
 
@@ -271,11 +271,10 @@ let is_nf3 = function
 let rec nf3_cmd = function
 | c when is_nf3_cmd c -> c
 | ReqNF(e)::cl -> ReqNF(e)::(nf3_cmd cl)
-| SendNF(a,e,t)::cl -> SendNF(a,e,t)::(nf3_cmd cl)
-(* TODO: adjust expressions! *)
-| SimAssign(al)::SendNF(a,e,t)::cl -> 
+| XferNF(a,e,t)::cl -> XferNF(a,e,t)::(nf3_cmd cl)
+| SimAssign(al)::XferNF(a,e,t)::cl -> 
   let af = fun_of_list al in
-  SendNF(simsubst af a,simsubst af e,t)::(nf3_cmd (SimAssign(al)::cl))
+  XferNF(simsubst af a,simsubst af e,t)::(nf3_cmd (SimAssign(al)::cl))
 | [IfNF bl] -> List.map (fun (ei,ci) -> (ei,nf3_cmd ci)) bl |> fun bl' -> [IfNF bl']
 | c::cl -> nf3_cmd (c::nf3_cmd cl)
 | _ -> failwith "nf3_cmd: should never happen"
@@ -297,7 +296,7 @@ let nf3 = function ContractNF(x,vl,fdl) ->
 
 let rec is_nf4_send = function
 | [] -> true 
-| SendNF _ ::cl -> is_nf4_send cl
+| XferNF _ ::cl -> is_nf4_send cl
 | [ SimAssign _ ] -> true
 | _ -> false
 
@@ -344,3 +343,5 @@ let rec nf4_fun_decls = function
 
 let nf4 = function ContractNF(x,vl,fdl) -> 
   ContractNF(x,vl,nf4_fun_decls fdl)
+
+  let nf c = c |>  nf0 |> nf1 |> nf2 |> nf3 |> nf4 

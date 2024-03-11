@@ -35,9 +35,8 @@ type expr =
 type cmd =
   | Skip
   | VarAssign of ide * expr
-  (* | MapAssign of ide * expr * expr *)  (* equivalent to VarAssign(ide, MapUpdate(Var(ide),e1,e2)) *)
   | Seq of cmd * cmd
-  | Send of ide * expr * tok
+  | Xfer of ide * expr * tok
   | If of expr * cmd * cmd
   | Req of expr             
 
@@ -77,7 +76,7 @@ type cmdNF1 =
 | SkipNF
 | VarAssignNF of ide * expr
 (* | MapAssignNF of ide * expr * expr *)
-| SendNF of expr * expr * tok
+| XferNF of expr * expr * tok
 | ReqNF of expr
 | IfNF of (expr * cmdNF) list
 (* problema: in SimAssign mancano le mappe! *)

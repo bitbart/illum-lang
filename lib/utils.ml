@@ -80,7 +80,7 @@ and vars_of_cmd1 = function
   | VarAssignNF(x,e) -> union [x] (vars_of_expr e)
   (* | MapAssignNF(x,e1,e2) -> union [x] (union (vars_of_expr e1) (vars_of_expr e2)) *)
   | IfNF bl -> List.fold_left (fun tl (e,cl) -> union tl (union (vars_of_expr e) (vars_of_cmd cl))) [] bl
-  | SendNF(a,e,_) -> union (vars_of_expr a) (vars_of_expr e)
+  | XferNF(a,e,_) -> union (vars_of_expr a) (vars_of_expr e)
   | ReqNF e -> vars_of_expr e                    
   | SimAssign _ -> failwith "vars_of_cmd1: SimAssign"
 and vars_of_cmd cl = List.fold_left (fun tl c -> union tl (vars_of_cmd1 c)) [] cl
@@ -131,7 +131,7 @@ let rec toks_of_cmd1 = function
 | SkipNF -> []
 | VarAssignNF(_,e) -> toks_of_expr e 
 (* | MapAssignNF(_,e1,e2) -> union (toks_of_expr e1) (toks_of_expr e2) *)
-| SendNF(_,e,tok) -> union (toks_of_expr e) [tok] 
+| XferNF(_,e,tok) -> union (toks_of_expr e) [tok] 
 | ReqNF e -> toks_of_expr e
 | IfNF bl -> List.fold_left (fun tl (e,cl) -> union tl (union (toks_of_expr e) (toks_of_cmd cl))) [] bl
 | SimAssign _ -> failwith "toks_of_cmd1: SimAssign"

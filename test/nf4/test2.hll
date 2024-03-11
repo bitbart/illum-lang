@@ -12,7 +12,6 @@ contract Test2 {
         } else {
             a.transfer(balance(T)-4 :T);
             x = 10;
-            // require true;
         }
     }
 }

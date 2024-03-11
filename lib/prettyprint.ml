@@ -62,7 +62,7 @@ and string_of_cmd t = function
     "\n" ^ tabs t "else {\n" ^ 
       (string_of_cmd (t+1) c2 ^ 
     "\n" ^ tabs t "}")
-  | Send(x,e,tok) -> tabs t (x ^ ".transfer(" ^ (string_of_expr e) ^ ":" ^ tok ^ ");")
+  | Xfer(x,e,tok) -> tabs t (x ^ ".transfer(" ^ (string_of_expr e) ^ ":" ^ tok ^ ");")
   | Req(e) -> tabs t ("require " ^ string_of_expr e ^ ";")
 
 
@@ -125,7 +125,7 @@ let string_of_contract (Contract(c,vdl,fdl)) =
 let rec string_of_cmdNF1 t = function
   | SkipNF -> tabs t "skip;"
   | VarAssignNF(x,e) -> tabs t (x ^ "=" ^ string_of_expr e ^ ";")
-  | SendNF(a,e,tok) -> tabs t (string_of_expr a ^ ".transfer(" ^ (string_of_expr e) ^ ":" ^ tok ^ ");")
+  | XferNF(a,e,tok) -> tabs t (string_of_expr a ^ ".transfer(" ^ (string_of_expr e) ^ ":" ^ tok ^ ");")
   | ReqNF(e) -> tabs t ("require " ^ string_of_expr e ^ ";")
   | IfNF [] -> failwith "should never happen"
   | IfNF [(e,c1)] -> 
