@@ -125,7 +125,7 @@ let string_of_contract (Contract(c,vdl,fdl)) =
 let rec string_of_cmdNF1 t = function
   | SkipNF -> tabs t "skip;"
   | VarAssignNF(x,e) -> tabs t (x ^ "=" ^ string_of_expr e ^ ";")
-  | XferNF(a,e,tok) -> tabs t (string_of_expr a ^ ".transfer(" ^ (string_of_expr e) ^ ":" ^ tok ^ ");")
+  | XferNF(x,e,tok) -> tabs t (x ^ ".transfer(" ^ (string_of_expr e) ^ ":" ^ tok ^ ");")
   | ReqNF(e) -> tabs t ("require " ^ string_of_expr e ^ ";")
   | IfNF [] -> failwith "should never happen"
   | IfNF [(e,c1)] -> 
@@ -200,10 +200,16 @@ let string_of_decorators d =
   (if d.auth = [] then ""
   else "afterRel(" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" d.afterRel) ^ ")")
 
+let string_of_call1 (x,el) = 
+  x ^ "<" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" el) ^ ">"
+
 let rec string_of_contrD = function
-  | Call l -> 
-    "call(" ^ (List.fold_left (fun s (x,el) -> s ^ (if s<>"" then "," else "") ^ x ^ "(" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" el) ^ ")") "" l) ^ ")"
-  | Send(e,t,x) -> "send(" ^ (string_of_expr e) ^ ":" ^ t ^ "->" ^ x ^ ")"
+| Call [(x,el)] -> "call " ^ string_of_call1 (x,el)
+| Call l -> 
+  "call( " ^
+  (List.fold_left (fun s (x,el) -> s ^ (if s<>"" then " || " else "") ^ string_of_call1 (x,el)) "" l) ^ 
+  " )"
+| Send(x,e,t) -> "send(" ^ string_of_expr e ^ ":" ^ t ^ " -> " ^ x ^ ")"
 
 and string_of_contrC l = List.fold_left 
   (fun s c -> s ^ (if s<>"" then "," else "") ^ 
@@ -225,7 +231,7 @@ let string_of_clause (c:clause) =
   tabs 1 (string_of_prep c.prep) ^ "\n" ^
   tabs 1 "branch: \n" ^
   tabs 2 (string_of_contrC c.cntr) ^ 
-  "\n}"
+  "\n}\n"
 
 (*
   name: ide;               (* X = clause name *)

@@ -10,7 +10,7 @@ let rec cmdNF_of_cmd = function
 | Skip -> []
 | VarAssign(x,e) -> [VarAssignNF(x,e)]
 (* | MapAssign(x,e1,e2) -> [MapAssignNF(x,e1,e2)] *)
-| Xfer(x,e,tok) -> [XferNF(Var x,e,tok)]
+| Xfer(x,e,t) -> [XferNF(x,e,t)]
 | Req(e) -> [ReqNF(e)]
 | If(e,c1,c2) -> let c1' = cmdNF_of_cmd c1 in 
   (match cmdNF_of_cmd c2 with
@@ -72,7 +72,7 @@ let nf1_push_assign_if = function
 | _ -> failwith "nf1_push_assign_if"
 
 let nf1_push_send_if = function
-| (XferNF(a,e,t), IfNF(bl)) -> IfNF(List.map (fun (ei,ci) -> (subst_bal t (Sub(Bal(t),e)) ei,XferNF(a,e,t)::ci)) bl)
+| (XferNF(x,e,t), IfNF(bl)) -> IfNF(List.map (fun (ei,ci) -> (subst_bal t (Sub(Bal(t),e)) ei,XferNF(x,e,t)::ci)) bl)
 | _ -> failwith "nf1_push_assign_if"
 
 let nf1_push_if_cmd = function
@@ -84,7 +84,7 @@ let nf1_pull_assign_req = function
 | _ -> failwith "nf1_pull_assign_req"
 
 let nf1_pull_send_req = function
-| (XferNF(a,e,t),ReqNF(er)) -> [ReqNF(subst_bal t (Sub(Bal(t),e)) er); XferNF(a,e,t)]
+| (XferNF(x,e,t),ReqNF(er)) -> [ReqNF(subst_bal t (Sub(Bal(t),e)) er); XferNF(x,e,t)]
 | _ -> failwith "nf1_pull_send_req: should never happen"
 
 (* bexpr_of_if_req constructs the top-level require condition. *)
@@ -117,9 +117,9 @@ let rec nf1_cmd = function
   |> fun bl1 -> [ ReqNF ( simplify_expr (bexpr_of_if_req bl1)) ; IfNF (nf1_drop_if_req bl1) ]
 | VarAssignNF(x,e)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_assign_if (VarAssignNF(x,e), IfNF bl))::cl)
 | VarAssignNF(x,e)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_assign_req (VarAssignNF(x,e), ReqNF(er)))@cl)
-| XferNF(a,e,t)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_send_req (XferNF(a,e,t), ReqNF(er)))@cl)
+| XferNF(x,e,t)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_send_req (XferNF(x,e,t), ReqNF(er)))@cl)
 | ReqNF(e1)::ReqNF(e2)::cl -> nf1_cmd (ReqNF(And(e1,e2))::cl)
-| XferNF(a,e,t)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_send_if (XferNF(a,e,t), IfNF(bl)))::cl)
+| XferNF(x,e,t)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_send_if (XferNF(x,e,t), IfNF(bl)))::cl)
 | IfNF(bl)::c::cl -> nf1_cmd ((nf1_push_if_cmd (IfNF(bl),c))::cl)
 | c::cl -> nf1_cmd (c::nf1_cmd cl)
 | _ -> failwith "nf1_cmd: should never happen"
@@ -204,11 +204,11 @@ let ssa_rw_expr st e =
 
 let ssa_rw_cmd1 st = function
 | VarAssignNF(x,e) -> let st' = ssa_inc st x in ([SimAssign [ssa_var st' x, ssa_rw_expr st e]], st')
-| XferNF(a,e,t) -> let st' = ssa_inc st t in 
+| XferNF(x,e,t) -> let st' = ssa_inc st t in 
   let e' = Sub(Bal(t),e) in
   (
     [
-    XferNF(ssa_rw_expr st a,ssa_rw_expr st e,t);
+    XferNF(ssa_var st x,ssa_rw_expr st e,t); (* check x *)
     SimAssign([ssa_tok st' t, ssa_rw_expr st e'])
     ], 
     st'
@@ -282,10 +282,13 @@ let is_nf3 = function
 let rec nf3_cmd = function
 | c when is_nf3_cmd c -> c
 | ReqNF(e)::cl -> ReqNF(e)::(nf3_cmd cl)
-| XferNF(a,e,t)::cl -> XferNF(a,e,t)::(nf3_cmd cl)
-| SimAssign(al)::XferNF(a,e,t)::cl -> 
+| XferNF(x,e,t)::cl -> XferNF(x,e,t)::(nf3_cmd cl)
+| SimAssign(al)::XferNF(x,e,t)::cl -> 
   let af = fun_of_list al in
-  XferNF(simsubst af a,simsubst af e,t)::(nf3_cmd (SimAssign(al)::cl))
+  let x' = match simsubst af (Var x) with
+  | Var y -> y
+  | _ -> failwith "nf3_cmd: should never happen" in
+  XferNF(x',simsubst af e,t)::(nf3_cmd (SimAssign(al)::cl))
 | [IfNF bl] -> List.map (fun (ei,ci) -> (ei,nf3_cmd ci)) bl |> fun bl' -> [IfNF bl']
 | c::cl -> nf3_cmd (c::nf3_cmd cl)
 | _ -> failwith "nf3_cmd: should never happen"

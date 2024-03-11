@@ -88,7 +88,7 @@ and vars_of_cmd1 = function
     SkipNF -> []
   | VarAssignNF(x,e) -> union [x] (vars_of_expr e)
   | IfNF bl -> List.fold_left (fun tl (e,cl) -> union tl (union (vars_of_expr e) (vars_of_cmd cl))) [] bl
-  | XferNF(a,e,_) -> union (vars_of_expr a) (vars_of_expr e)
+  | XferNF(x,e,_) -> union [x] (vars_of_expr e)
   | ReqNF e -> vars_of_expr e                    
   | SimAssign _ -> failwith "vars_of_cmd1: SimAssign"
 and vars_of_cmd cl = List.fold_left (fun tl c -> union tl (vars_of_cmd1 c)) [] cl

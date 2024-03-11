@@ -75,7 +75,7 @@ type contract = Contract of ide * var_decls * fun_decls
 type cmdNF1 = 
 | SkipNF
 | VarAssignNF of ide * expr
-| XferNF of expr * expr * tok
+| XferNF of ide * expr * tok
 | ReqNF of expr
 | IfNF of (expr * cmdNF) list
 | SimAssign of (ide * expr) list (* simultaneous assignment - non produced by the parser *)
@@ -108,7 +108,7 @@ type decorators = {
 
 type contrD = 
 | Call of (ide * expr list) list    (* call X(e1,...;?) | Y(...) | ... *)
-| Send of expr * tok * ide          (* send(e:T -> a) *)
+| Send of ide * expr * tok          (* send(e:T -> a) *)
 
 and contrC = (decorators * contrD) list
 

@@ -1,5 +1,6 @@
 open IllumLib.Utils
 open IllumLib.Nf
+open IllumLib.Hllc
 
 let home = "/home/bart/progs/ocaml/illum-lang/test/"
 
@@ -74,3 +75,17 @@ let test_nf4 fname = match read_file fname with
 | s -> s |> parse |> nf0 |> nf1 |> nf2 |> nf3 |> nf4 |> is_nf4
 
 let%test "nf4_test0" = test_nf4 "nf4/test0.hll"
+let%test "nf4_test1" = test_nf4 "nf4/test1.hll"
+let%test "nf4_test2" = test_nf4 "nf4/test2.hll"
+let%test "nf4_test3" = test_nf4 "nf4/test3.hll"
+
+(******************************************************************************)
+(*                                       HLLC                                 *)
+(******************************************************************************)
+
+let test_hllc fname = match read_file fname with
+  "" -> false
+| s -> s |> parse |> hllc |> fun _ -> true
+
+let%test "hllc_test0" = test_hllc "hllc/test0.hll"
+let%test "hllc_test1" = test_hllc "hllc/test1.hll"

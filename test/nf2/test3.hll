@@ -10,7 +10,7 @@ contract Test3 {
         else {
             x = 2;
             a.transfer(balance(T0)-x:T0);
-            a.transfer(balance(T1)-x:T1);
+            x.transfer(balance(T1)-x:T1);
         }
     }
 }

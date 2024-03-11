@@ -1,4 +1,4 @@
-// Test NF4: 1 assignment, 1 tranfer
+// Test HLLC: 1 assignment, 1 tranfer
 
 contract Test0 {
     int x; 
