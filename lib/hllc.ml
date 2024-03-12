@@ -116,10 +116,12 @@ let hllc_body f al fml xl tl cl =
     |> List.map (fun c -> (decs [] [] [],c)) 
 }
 
-let hllc_post_branch = function
+let hllc_post_branch xl tl = function
  | ConstrNF(_,_,_,_) -> failwith "hllc_post_branch: constructor not implemented"  
  | ProcNF(g,_,fml,_,_) -> 
-    (decs fml.auths fml.afters [], Call [(g,[])]) (* FIXME: g parameters *)
+    let exl = List.map (fun x -> Var x) xl in
+    let etl = List.map (fun t -> Var (tokbal t)) tl in
+    (decs fml.auths fml.afters [], Call [(g,exl @ etl)]) (* FIXME: questionmark parameter *)
 
 let hllc_post f xl tl nl fdl =
 {
@@ -130,7 +132,7 @@ let hllc_post f xl tl nl fdl =
   prep = True;
   cntr =
   List.filter (fun fd -> match fd with ProcNF(g,_,_,_,_) -> List.mem g nl | _ -> false) fdl
-  |> List.map hllc_post_branch
+  |> List.map (hllc_post_branch xl tl) 
 }
 
 let hllc_fun xl tl fdl = function
