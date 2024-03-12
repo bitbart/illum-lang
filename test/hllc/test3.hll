@@ -1,13 +1,19 @@
-// Test NF4: 1 assignment, 1 tranfer
+// Test HLLC: 1 assignment, 1 tranfer
 
 contract Test3 {
     int x; 
   
-    function f(address a, int y) auth(a) after(5) input(1:T) {
-        if (y > 5) {
-            a.transfer(x:T);
-            require balance(T) > 5;
-        } else
-            x = 10;
-    } next(f)
+     function f(address a, int y) input(1:T0) {
+        // FIXME: T0 is not properly recorded in state
+        x = x + y;
+        a.transfer(x:T1);
+    } next(g,h)
+
+    function g(address a) auth(a) after(4) {
+        x = 42;
+    }
+
+    function h(address b) auth(b) after(5) {
+        x = 51;
+    }
 }

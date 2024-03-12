@@ -3,7 +3,7 @@
 contract Test2 {
     int x; 
   
-    function f(address a, int y) input(1:T0) {
+    function f(address a, int y) input(1:T) {
         x = x + y;
         a.transfer(x:T);
     } next(g,h)
