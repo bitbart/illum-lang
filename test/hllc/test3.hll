@@ -9,11 +9,11 @@ contract Test3 {
         a.transfer(x:T1);
     } next(g,h)
 
-    function g(address a) auth(a) after(4) {
+    function g(address a) after(4) {
         x = 42;
     }
 
-    function h(address b) auth(b) after(5) {
+    function h(address b) after(5) {
         x = 51;
     }
 }

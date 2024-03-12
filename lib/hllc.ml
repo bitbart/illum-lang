@@ -139,6 +139,14 @@ let hllc_fun xl tl fdl = function
   | ConstrNF(_ (* a *),_ (* fml *),_ (* c *),_ (* nl *)) -> [] (* ConstrNF(a,fml,nf2_cmd xl (toks_of_cmd c) c,nl) *)
   | ProcNF(f,al,fml,cl,nl) -> [ hllc_body f (List.map snd al) fml xl tl cl; hllc_post f xl tl nl fdl ]
 
+let complete_next f_univ = function
+| [] -> f_univ
+| nl -> nl
+
+let fix_next f_univ = function
+| ConstrNF(_ (* a *),_ (* fml *),_ (* c *),_ (* nl *)) -> [] (* ConstrNF(a,fml,nf2_cmd xl (toks_of_cmd c) c,nl) *)
+| ProcNF(f,al,fml,cl,nl) -> ProcNF(f,al,fml,cl,complete_next f_univ nl)
+
 let hllc_nf = function ContractNF(_,vl,fdl) -> 
   List.flatten (List.map (fun fd -> hllc_fun (vars_of_var_decls vl) (toks_of_fun_decls fdl) fdl fd) fdl)
   @
