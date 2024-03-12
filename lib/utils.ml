@@ -148,9 +148,7 @@ let toks_of_fun = function
   | ConstrNF(_,_,c,_) 
   | ProcNF(_,_,_,c,_) -> toks_of_cmd c
 
-let rec toks_of_fun_decls = function
-| EmptyFunDeclsNF -> []
-| FunDeclSeqNF(f,fl) -> union (toks_of_fun f) (toks_of_fun_decls fl)
+let toks_of_fun_decls = List.fold_left (fun tl f -> union tl (toks_of_fun f)) []
 
 let toks_of_contract = function ContractNF(_,_,fdl) -> toks_of_fun_decls fdl
 
@@ -247,3 +245,10 @@ let rec simsubst (af:ide -> expr) (e:expr) : expr = match e with
 | BalPre(t) -> BalPre(t)
 | IfE(e1,e2,e3)    -> IfE   (simsubst af e1,simsubst af e2,simsubst af e3)
 | MapUpd(e1,e2,e3) -> MapUpd(simsubst af e1,simsubst af e2,simsubst af e3)
+
+(******************************************************************************)
+(*                          Get functions in a contract                       *)
+(******************************************************************************)
+
+let get_fun _ _ = []
+(* List.map (fun n -> get_fun n contr) nl *)

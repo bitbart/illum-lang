@@ -1,0 +1,18 @@
+// Test HLLC: 1 assignment, 1 tranfer, 1 next
+
+contract Test2 {
+    int x; 
+  
+    function f(address a, int y) input(1:T0) {
+        x = x + y;
+        a.transfer(x:T);
+    } next(g,h)
+
+    function g(address a) auth(a) after(4) {
+        x = 42;
+    }
+
+    function h(address b) auth(b) after(5) {
+        x = 51;
+    }
+}

@@ -179,10 +179,9 @@ let string_of_fun_declNF = function
       (if c=[] then "" else (string_of_cmdNF 2 c) ^ "\n") ^
     tabs 1 "}" ^ (string_of_nexts nl)
 
-let rec string_of_fun_declsNF = function
-  | EmptyFunDeclsNF -> ""
-  | FunDeclSeqNF(f,fl) -> (string_of_fun_declNF f) ^ "\n" ^ (string_of_fun_declsNF fl)
-
+let string_of_fun_declsNF = List.fold_left 
+  (fun s f -> s ^ (if s<>"" then "\n" else "") ^ (string_of_fun_declNF f)) ""
+ 
 let string_of_contractNF = function ContractNF(c,vdl,fdl) -> 
   "contract " ^ c ^ " { " ^ (string_of_var_decls vdl) ^ (string_of_fun_declsNF fdl) ^ " }"
 
@@ -190,15 +189,15 @@ let string_of_contractNF = function ContractNF(c,vdl,fdl) ->
 (*                        Pretty-printing ILLUM clauses                       *)
 (******************************************************************************)
 
-let string_of_decorators d = 
+let string_of_decs d = 
   (if d.auth = [] then ""
-  else "auth(" ^ (List.fold_left (fun s x -> s ^ (if s<>"" then "," else "") ^ x) "" d.auth) ^ "), ") 
+  else "auth(" ^ (List.fold_left (fun s x -> s ^ (if s<>"" then "," else "") ^ x) "" d.auth) ^ ") ") 
   ^
-  (if d.auth = [] then ""
-  else "afterAbs(" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" d.afterAbs) ^ "), ")
+  (if d.afterAbs = [] then ""
+  else "afterAbs(" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" d.afterAbs) ^ ") ")
   ^
-  (if d.auth = [] then ""
-  else "afterRel(" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" d.afterRel) ^ ")")
+  (if d.afterRel = [] then ""
+  else "afterRel(" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" d.afterRel) ^ ") ")
 
 let string_of_call1 (x,el) = 
   x ^ "<" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" el) ^ ">"
@@ -209,12 +208,16 @@ let rec string_of_contrD = function
   "call( " ^
   (List.fold_left (fun s (x,el) -> s ^ (if s<>"" then " || " else "") ^ string_of_call1 (x,el)) "" l) ^ 
   " )"
-| Send(x,e,t) -> "send(" ^ string_of_expr e ^ ":" ^ t ^ " -> " ^ x ^ ")"
+| Send l -> "send(" ^ (List.fold_left (fun s (x,e,t) -> s ^ string_of_expr e ^ ":" ^ t ^ " -> " ^ x) "" l) ^ ")"
 
 and string_of_contrC l = List.fold_left 
-  (fun s c -> s ^ (if s<>"" then "," else "") ^ 
-    let s = string_of_decorators (fst c) in (if s="" then "" else ":") ^ 
-    string_of_contrD (snd c)) 
+  (fun s c -> 
+   s ^ 
+   (if s<>"" then "\n" else "") ^ 
+   tabs 2
+   (let sdecs = string_of_decs (fst c) in (if sdecs="" then "" else sdecs ^ ": ") ^ 
+   string_of_contrD (snd c))
+  ) 
   "" l 
 
 let string_of_wallet w = "wallet: " ^
@@ -230,7 +233,7 @@ let string_of_clause (c:clause) =
   tabs 1 (string_of_wallet c.walp) ^ "\n" ^
   tabs 1 (string_of_prep c.prep) ^ "\n" ^
   tabs 1 "branch: \n" ^
-  tabs 2 (string_of_contrC c.cntr) ^ 
+  string_of_contrC c.cntr ^ 
   "\n}\n"
 
 (*

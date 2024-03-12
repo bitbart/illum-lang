@@ -1,4 +1,4 @@
-// Test HLLC: 1 assignment, 1 tranfer
+// Test HLLC: 1 assignment, 1 tranfer, 0 next
 
 contract Test0 {
     int x; 

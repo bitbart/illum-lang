@@ -91,9 +91,7 @@ type fun_declNF =
   | ConstrNF of args * fmodsNF * cmdNF * (ide list)
   | ProcNF of ide * args * fmodsNF * cmdNF * (ide list)           
 
-type fun_declsNF = EmptyFunDeclsNF | FunDeclSeqNF of fun_declNF * fun_declsNF
-
-type contractNF = ContractNF of ide * var_decls * fun_declsNF
+type contractNF = ContractNF of ide * var_decls * (fun_declNF list)
 
 
 (******************************************************************************)
@@ -107,9 +105,10 @@ type decorators = {
 }
 
 type contrD = 
-| Call of (ide * expr list) list    (* call X(e1,...;?) | Y(...) | ... *)
-| Send of ide * expr * tok          (* send(e:T -> a) *)
+| Call of (ide * expr list)  list    (* call X(e1,...;?) | Y(...) | ... *)
+| Send of (ide * expr * tok) list    (* send(e:T -> a || ...) *)
 
+(* contrC is a choice between branches *)
 and contrC = (decorators * contrD) list
 
 and clause = {

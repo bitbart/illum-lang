@@ -34,8 +34,8 @@ let fun_declNF_of_fun_decl = function
   | Proc(f,xl,fml,c,nl) -> ProcNF(f,xl,fmodsNF_of_fmods fml,cmdNF_of_cmd c,nl)
 
 let rec fun_declsNF_of_fun_decls = function
-  | EmptyFunDecls -> EmptyFunDeclsNF
-  | FunDeclSeq(f,fl) -> FunDeclSeqNF(fun_declNF_of_fun_decl f,fun_declsNF_of_fun_decls fl)
+  | EmptyFunDecls -> []
+  | FunDeclSeq(f,fl) -> (fun_declNF_of_fun_decl f)::(fun_declsNF_of_fun_decls fl)
 
 let nf0 = function
   | Contract(x,vl,fdl) -> ContractNF(x,vl,fun_declsNF_of_fun_decls fdl)
@@ -60,12 +60,8 @@ let is_nf1_fun = function
   | ConstrNF(_,_,c,_) 
   | ProcNF(_,_,_,c,_) -> is_nf1_cmd c
 
-let rec list_of_fun_decls = function
-  | EmptyFunDeclsNF -> []
-  | FunDeclSeqNF(f,fl) -> f :: (list_of_fun_decls fl)
-
 let is_nf1 = function
-  ContractNF(_,_,fdl) -> List.for_all is_nf1_fun (list_of_fun_decls fdl)
+  ContractNF(_,_,fdl) -> List.for_all is_nf1_fun fdl
 
 let nf1_push_assign_if = function
 | (VarAssignNF(x,e), IfNF bl) -> IfNF(List.map (fun (ei,ci) -> (subst_var x e ei,VarAssignNF(x,e)::ci)) bl)
@@ -128,12 +124,8 @@ let nf1_fun = function
   | ConstrNF(a,fml,c,nl) -> ConstrNF(a,fml,nf1_cmd c,nl) 
   | ProcNF(f,a,fml,c,nl) -> ProcNF(f,a,fml,nf1_cmd c,nl)
 
-let rec nf1_fun_decls = function
-| EmptyFunDeclsNF -> EmptyFunDeclsNF
-| FunDeclSeqNF(f,fl) -> FunDeclSeqNF(nf1_fun f,nf1_fun_decls fl)
-
 let nf1 = function
-  ContractNF(x,vl,fdl) -> ContractNF(x,vl,nf1_fun_decls fdl)
+  ContractNF(x,vl,fdl) -> ContractNF(x, vl, List.map nf1_fun fdl)
 
 (******************************************************************************)
 (*                                       NF2: SSA                             *)
@@ -162,7 +154,7 @@ let is_nf2_fun = function
   | ProcNF(_,_,_,c,_) -> is_nf2_cmd c
 
 let is_nf2 = function
-  ContractNF(_,_,fdl) -> List.for_all is_nf2_fun (list_of_fun_decls fdl)
+  ContractNF(_,_,fdl) -> List.for_all is_nf2_fun fdl
 
 (* ssavars i xl decorates the state variables xl with the index i *)
 (* Warning: this is potentially unsafe, e.g. if the contract state includes x and x_0 *)
@@ -244,12 +236,8 @@ let nf2_fun xl = function
   | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf2_cmd xl (toks_of_cmd c) (List.map snd al) c,nl) 
   | ProcNF(f,al,fml,c,nl) -> ProcNF(f,al,fml,nf2_cmd xl (toks_of_cmd c) (List.map snd al) c,nl)
 
-let rec nf2_fun_decls xl = function
-| EmptyFunDeclsNF -> EmptyFunDeclsNF
-| FunDeclSeqNF(f,fl) -> FunDeclSeqNF(nf2_fun xl f,nf2_fun_decls xl fl)
-
 let nf2 = function ContractNF(x,vl,fdl) -> 
-  ContractNF(x,vl,nf2_fun_decls (vars_of_var_decls vl) fdl)
+  ContractNF(x,vl,List.map (fun f -> nf2_fun (vars_of_var_decls vl) f) fdl)
 
 (******************************************************************************)
 (*                              NF3: move transfers up                        *)
@@ -277,7 +265,7 @@ let is_nf3_fun = function
   | ProcNF(_,_,_,c,_) -> is_nf3_cmd c
 
 let is_nf3 = function
-  ContractNF(_,_,fdl) -> List.for_all is_nf3_fun (list_of_fun_decls fdl)
+  ContractNF(_,_,fdl) -> List.for_all is_nf3_fun fdl
 
 let rec nf3_cmd = function
 | c when is_nf3_cmd c -> c
@@ -297,12 +285,8 @@ let nf3_fun = function
   | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf3_cmd c,nl) 
   | ProcNF(f,al,fml,c,nl) -> ProcNF(f,al,fml,nf3_cmd c,nl)
 
-let rec nf3_fun_decls = function
-| EmptyFunDeclsNF -> EmptyFunDeclsNF
-| FunDeclSeqNF(f,fl) -> FunDeclSeqNF(nf3_fun f,nf3_fun_decls fl)
-
 let nf3 = function ContractNF(x,vl,fdl) -> 
-  ContractNF(x,vl,nf3_fun_decls fdl)
+  ContractNF(x,vl,List.map nf3_fun fdl)
 
 (******************************************************************************)
 (*                                 NF4: fold assignments                      *)
@@ -325,7 +309,7 @@ let is_nf4_fun = function
   | ProcNF(_,_,_,c,_) -> is_nf4_cmd c
 
 let is_nf4 = function
-  ContractNF(_,_,fdl) -> List.for_all is_nf4_fun (list_of_fun_decls fdl)
+  ContractNF(_,_,fdl) -> List.for_all is_nf4_fun fdl
 
 let is_simassign = function
 | SimAssign _ -> true
@@ -351,11 +335,7 @@ let nf4_fun = function
   | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf4_cmd c,nl) 
   | ProcNF(f,al,fml,c,nl) -> ProcNF(f,al,fml,nf4_cmd c,nl)
 
-let rec nf4_fun_decls = function
-| EmptyFunDeclsNF -> EmptyFunDeclsNF
-| FunDeclSeqNF(f,fl) -> FunDeclSeqNF(nf4_fun f,nf4_fun_decls fl)
-
 let nf4 = function ContractNF(x,vl,fdl) -> 
-  ContractNF(x,vl,nf4_fun_decls fdl)
+  ContractNF(x,vl,List.map nf4_fun fdl)
 
   let nf c = c |>  nf0 |> nf1 |> nf2 |> nf3 |> nf4 
