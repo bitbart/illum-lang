@@ -1,6 +1,7 @@
 open Ast
 open Utils
 open Nf
+open Simplify_expr
 
 (******************************************************************************)
 (*                                 HeLLUM -> ILLUM compiler                   *)
@@ -58,9 +59,11 @@ let hllc_body_cmd f = function
 | [] -> []
 | [IfNF bl] -> 
   bl 
-  |> List.fold_left (fun l (e,cl) -> (e,cl)::l) [] (* FIXME: construct Check conditions *)
+  |> List.fold_left (fun (b,l) (e,cl) -> (Or(b,e), (simplify_expr (And(Not b,e)),cl)::l)) (False,[])
+  |> snd
   |> List.map (fun (e,cl) -> hllc_body_branch f e cl)
   |> List.flatten
+  |> List.rev
 | cl -> hllc_body_branch f True cl
 
 let hllc_body f al fml xl tl cl = 
