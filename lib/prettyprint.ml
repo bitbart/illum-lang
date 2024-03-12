@@ -200,7 +200,7 @@ let string_of_decs d =
   else "afterRel(" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" d.afterRel) ^ ") ")
 
 let string_of_call1 (x,el) = 
-  x ^ "<" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" el) ^ ">"
+  x ^ "(" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" el) ^ ")"
 
 let rec string_of_contrD = function
 | Call [(x,el)] -> "call " ^ string_of_call1 (x,el)

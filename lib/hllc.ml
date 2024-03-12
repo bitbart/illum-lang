@@ -39,28 +39,34 @@ let hllc_body_branch_pay cl = cl
 let hllc_body_branch_post f cl = 
   cl 
   |> List.filter (fun c -> match c with SimAssign _ -> true | _ -> false)
-  |> function  
-| [ SimAssign al ] ->
+  |> function 
+  | [ SimAssign al ] ->
     al 
     |> List.map snd 
     |> fun l -> (snd (clause_names f),l) (* FIXME: Post-F parameters *)
-| _ -> failwith "hllc_body_branch_post: cannot happen"
+  | _ -> failwith "hllc_body_branch_post: cannot happen"
 
-let hllc_body_branch f cl = 
+let hllc_body_branch_check b = if b=True then [] else ["Check",[b]]
+
+let hllc_body_branch f b cl = 
   let pays = hllc_body_branch_pay cl in
   let post = hllc_body_branch_post f cl in
-  [ Call (post::pays) ]
+  let chck = hllc_body_branch_check b in
+  [ Call (chck @ pays @ [post]) ]
 
 let hllc_body_cmd f = function
 | [] -> []
-| [IfNF _] -> failwith "NOPE"
-(* | [ XferNF(a,e,t); SimAssign(yl) ] -> failwith "NOPE" *)
-| cl -> hllc_body_branch f cl
+| [IfNF bl] -> 
+  bl 
+  |> List.fold_left (fun l (e,cl) -> (e,cl)::l) [] (* FIXME: construct Check conditions *)
+  |> List.map (fun (e,cl) -> hllc_body_branch f e cl)
+  |> List.flatten
+| cl -> hllc_body_branch f True cl
 
 let hllc_body f al fml xl tl cl = 
-  let b = match cl with 
-  | ReqNF e::_ -> e
-  | _ -> True
+  let (b,cl') = match cl with 
+  | ReqNF e::tl -> (e,tl)
+  | _ -> (True,cl)
 in
 print_endline "***FIXME: funding precondition";
 {
@@ -70,7 +76,7 @@ print_endline "***FIXME: funding precondition";
   walp = fml.inputs; (* FIXME *)
   prep = b;
   cntr =  
-    hllc_body_cmd f cl 
+    hllc_body_cmd f cl' 
     |> List.map (fun c -> (decs [] [] [],c)) 
 }
 

@@ -1,0 +1,13 @@
+// Test NF4: 1 assignment, 1 tranfer
+
+contract Test3 {
+    int x; 
+  
+    function f(address a, int y) auth(a) after(5) input(1:T) {
+        if (y > 5) {
+            a.transfer(x:T);
+            require balance(T) > 5;
+        } else
+            x = 10;
+    } next(f)
+}
