@@ -144,13 +144,14 @@ let complete_next f_univ = function
 | nl -> nl
 
 let fix_next f_univ = function
-| ConstrNF(_ (* a *),_ (* fml *),_ (* c *),_ (* nl *)) -> [] (* ConstrNF(a,fml,nf2_cmd xl (toks_of_cmd c) c,nl) *)
+| ConstrNF(a,fml,cl,nl) -> ConstrNF(a,fml,cl,complete_next f_univ nl)
 | ProcNF(f,al,fml,cl,nl) -> ProcNF(f,al,fml,cl,complete_next f_univ nl)
 
-let hllc_nf = function ContractNF(_,vl,fdl) -> 
-  List.flatten (List.map (fun fd -> hllc_fun (vars_of_var_decls vl) (toks_of_fun_decls fdl) fdl fd) fdl)
-  @
-  [ hllc_pay_clause "a" "v" "t"; hllc_check_clause "b" ]
+let hllc_nf = function ContractNF(_,vl,fdl) ->
+  let f_univ = List.map (function ProcNF(f,_,_,_,_) -> f | _ -> failwith "hllc_nf: cannot happen") fdl in 
+  let fdl' = List.map (fix_next f_univ) fdl in 
+  List.flatten (List.map (fun fd -> hllc_fun (vars_of_var_decls vl) (toks_of_fun_decls fdl') fdl' fd) fdl')
+   @ [ hllc_pay_clause "a" "v" "t"; hllc_check_clause "b" ]
 
 let hllc (c:contract) : clause list =
   c |> nf |> hllc_nf 
