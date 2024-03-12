@@ -30,13 +30,32 @@ let hllc_check_clause b =
   cntr = [ (decs [] [] [], Send(["Null",IntConst 0,"T"])) ] 
 }
 
-let hllc_cmd = function
+let hllc_body_branch_pay cl = cl
+(* construct list of parameters for Pay calls *)
+|> List.fold_left (fun d c -> match c with XferNF(x,e,t) -> [Var x;e;Var t]::d | _ -> d) []
+(* construct Pay calls *)
+|> List.map (fun args -> ("Pay",args))
+
+let hllc_body_branch_post f cl = 
+  cl 
+  |> List.filter (fun c -> match c with SimAssign _ -> true | _ -> false)
+  |> function  
+| [ SimAssign al ] ->
+    al 
+    |> List.map snd 
+    |> fun l -> (snd (clause_names f),l) (* FIXME: Post-F parameters *)
+| _ -> failwith "hllc_body_branch_post: cannot happen"
+
+let hllc_body_branch f cl = 
+  let pays = hllc_body_branch_pay cl in
+  let post = hllc_body_branch_post f cl in
+  [ Call (post::pays) ]
+
+let hllc_body_cmd f = function
 | [] -> []
 | [IfNF _] -> failwith "NOPE"
 (* | [ XferNF(a,e,t); SimAssign(yl) ] -> failwith "NOPE" *)
-| cl -> cl
-|> List.fold_left (fun d c -> match c with XferNF(x,e,t) -> [Var x;e;Var t]::d | _ -> d) []
-|> fun l -> [ Call (List.map (fun args -> ("Pay",args)) l) ]
+| cl -> hllc_body_branch f cl
 
 let hllc_body f al fml xl tl cl = 
   let b = match cl with 
@@ -51,14 +70,14 @@ print_endline "***FIXME: funding precondition";
   walp = fml.inputs; (* FIXME *)
   prep = b;
   cntr =  
-    hllc_cmd cl 
+    hllc_body_cmd f cl 
     |> List.map (fun c -> (decs [] [] [],c)) 
 }
 
 let hllc_post_branch = function
  | ConstrNF(_,_,_,_) -> failwith "hllc_post_branch: constructor not implemented"  
  | ProcNF(g,_,fml,_,_) -> 
-    (decs fml.auths fml.afters [], Call [(g,[])])
+    (decs fml.auths fml.afters [], Call [(g,[])]) (* FIXME: g parameters *)
 
 let hllc_post f xl tl nl fdl =
 {
