@@ -32,7 +32,7 @@ open Ast
 %token CONTRACT
 %token CONSTR
 %token FUN
-%token TINT TUINT TADDR TSTRING TMAPPING ARROW
+%token TBOOL TINT TUINT TADDR TSTRING TMAPPING ARROW
 %token AUTH AFTER INPUT NEXT
 %token SENDSEP TOKSEP ARGSEP
 
@@ -108,6 +108,7 @@ cmd:
 ;
 
 btype:
+  | TBOOL { TBool }
   | TINT { TInt }
   | TUINT { TUint }
   | TADDR { TAddr }

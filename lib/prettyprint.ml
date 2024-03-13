@@ -1,5 +1,4 @@
 open Ast
-open Types
 open Utils
 
 (******************************************************************************)
@@ -67,6 +66,7 @@ and string_of_cmd t = function
 
 
 let string_of_btype = function
+  | TBool -> "bool"
   | TInt -> "int"
   | TUint -> "uint"
   | TAddr -> "address"
@@ -183,7 +183,7 @@ let string_of_fun_declsNF = List.fold_left
   (fun s f -> s ^ (if s<>"" then "\n" else "") ^ (string_of_fun_declNF f)) ""
  
 let string_of_contractNF = function ContractNF(c,vdl,fdl) -> 
-  "contract " ^ c ^ " { " ^ (string_of_var_decls vdl) ^ (string_of_fun_declsNF fdl) ^ " }"
+  "contract " ^ c ^ " { " ^ (string_of_var_decls vdl) ^ (string_of_fun_declsNF fdl) ^ "\n}"
 
 (******************************************************************************)
 (*                        Pretty-printing ILLUM clauses                       *)
@@ -248,6 +248,8 @@ let string_of_clause (c:clause) =
 (******************************************************************************)
 (*                        Pretty-printing HeLLUM semantics                    *)
 (******************************************************************************)
+
+open Sem_hellum
 
 let string_of_env1 s x = match topenv s x with
   | IVar l -> string_of_int l ^ "/" ^ x

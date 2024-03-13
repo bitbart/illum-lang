@@ -1,6 +1,7 @@
 open Ast
 open Utils
 open Simplify_expr
+open Typecheck
 
 (******************************************************************************)
 (*                          NF0: lists for seq and if branches                *)
@@ -338,4 +339,4 @@ let nf4_fun = function
 let nf4 = function ContractNF(x,vl,fdl) -> 
   ContractNF(x,vl,List.map nf4_fun fdl)
 
-  let nf c = c |>  nf0 |> nf1 |> nf2 |> nf3 |> nf4 
+  let nf c = c |> nf0 |> typecheck |> nf1 |> nf2 |> nf3 |> nf4 

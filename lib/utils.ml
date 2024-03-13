@@ -19,10 +19,20 @@ let diff l1 l2 = List.filter (fun x -> not (List.mem x l2)) l1
 
 let is_disjoint l1 l2 = List.fold_left (fun b x -> b && not (List.mem x l2)) true l1
 
+let subseteq l1 l2 = List.fold_left (fun b x -> b && List.mem x l2) true l1
+
+let rec no_dup = function 
+| [] -> true
+| x::l -> if List.mem x l then false else no_dup l
+
 let rec last = function
     [] -> failwith "last on empty list"
   | [x] -> x
   | _::l -> last l
+
+let bind f x v = fun y -> if y=x then v else f y
+
+let piecewise f g = fun x -> try f x with _ -> g x
 
 (******************************************************************************)
 (*                                Variables in a contract                     *)

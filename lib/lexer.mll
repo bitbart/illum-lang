@@ -55,6 +55,7 @@ rule read_token =
   | "constructor" { CONSTR } 
   | "function" { FUN }
   | "," { ARGSEP }  
+  | "bool" { TBOOL }
   | "int" { TINT }
   | "uint" { TUINT }
   | "address" { TADDR}

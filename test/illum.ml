@@ -80,6 +80,23 @@ let%test "nf4_test2" = test_nf4 "nf4/test2.hll"
 let%test "nf4_test3" = test_nf4 "nf4/test3.hll"
 
 (******************************************************************************)
+(*                                    Typecheck                               *)
+(******************************************************************************)
+
+open IllumLib.Typecheck
+
+let test_typecheck b fname = match read_file fname with
+  "" -> false
+| s -> s |> parse |> nf0 |> fun c -> b = ok_typecheck c
+
+let%test "typecheck_test0" = test_typecheck false "typecheck/test0.hll"
+let%test "typecheck_test1" = test_typecheck false "typecheck/test1.hll"
+let%test "typecheck_test2" = test_typecheck false "typecheck/test2.hll"
+let%test "typecheck_test3" = test_typecheck false "typecheck/test3.hll"
+let%test "typecheck_test4" = test_typecheck false "typecheck/test4.hll"
+let%test "typecheck_test5" = test_typecheck false "typecheck/test5.hll"
+
+(******************************************************************************)
 (*                                       HLLC                                 *)
 (******************************************************************************)
 

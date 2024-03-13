@@ -1,0 +1,8 @@
+contract Test2 {
+    int a;
+    uint b;
+    address c; 
+
+    function f(int a, uint b) {
+    } next(g) // function g undefined
+}

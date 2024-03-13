@@ -40,7 +40,7 @@ type cmd =
   | If of expr * cmd * cmd
   | Req of expr             
 
-and btype = TInt | TUint | TAddr | TString
+and btype = TInt | TUint | TAddr | TString | TBool
 
 and arg = btype * ide
 

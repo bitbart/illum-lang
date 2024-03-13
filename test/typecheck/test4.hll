@@ -1,0 +1,9 @@
+contract Test4 {
+    int a;
+    bool b;
+    address c; 
+
+    function f(int a) {
+        b = a && b;
+    } next(f)
+}

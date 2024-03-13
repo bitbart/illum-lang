@@ -1,0 +1,9 @@
+contract Test3 {
+    int a;
+    uint b;
+    address c; 
+
+    function f(int a, uint b) {
+        b = a + true;
+    } next(f)
+}

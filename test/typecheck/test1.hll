@@ -1,0 +1,8 @@
+contract Test1 {
+    int a;
+    uint b;
+    address c; 
+
+    function f(int a, uint a) { // duplicate variable
+    }
+}

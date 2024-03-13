@@ -148,7 +148,7 @@ let fix_next f_univ = function
 | ProcNF(f,al,fml,cl,nl) -> ProcNF(f,al,fml,cl,complete_next f_univ nl)
 
 let hllc_nf = function ContractNF(_,vl,fdl) ->
-  let f_univ = List.map (function ProcNF(f,_,_,_,_) -> f | _ -> failwith "hllc_nf: cannot happen") fdl in 
+  let f_univ = List.fold_left (fun fl fd -> match fd with ProcNF(f,_,_,_,_) -> f::fl | _ -> fl) [] fdl in 
   let fdl' = List.map (fix_next f_univ) fdl in 
   List.flatten (List.map (fun fd -> hllc_fun (vars_of_var_decls vl) (toks_of_fun_decls fdl') fdl' fd) fdl')
    @ [ hllc_pay_clause "a" "v" "t"; hllc_check_clause "b" ]
