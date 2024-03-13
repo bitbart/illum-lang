@@ -22,10 +22,10 @@ let rec env_of_ldecls = function
     | [] -> fun x -> raise (UnboundVar x)
     | (t,x)::l -> bind (env_of_ldecls l) x (TBase t)
 
-let rec env_of_gdecls = function
+let rec env_of_var_decls = function
 | EmptyVarDecls -> fun x -> raise (UnboundVar x)
-| VarDeclSeq(VarDecl(t,x),vl') -> bind (env_of_gdecls vl') x (TBase t)
-| VarDeclSeq(MapDecl(t1,t2,x),vl') -> bind (env_of_gdecls vl') x (TMap(t1,t2))
+| VarDeclSeq(VarDecl(t,x),vl') -> bind (env_of_var_decls vl') x (TBase t)
+| VarDeclSeq(MapDecl(t1,t2,x),vl') -> bind (env_of_var_decls vl') x (TMap(t1,t2))
 
 let unbox = function
 | TBase b -> b
@@ -127,22 +127,23 @@ let typecheck_cmd1 (env:ide -> hlltype) = function
 
 let fail_if_false b s c = if not b then failwith s else c
 
-let typecheck_fun_gen f_univ env (f,a,_,cl,nl) = 
-  let env' = piecewise (env_of_ldecls a) env in ()
+let typecheck_fun_gen f_univ env (f,a,_,vdl,cl,nl) = 
+  let env1 = piecewise (env_of_ldecls a) env in 
+  let env2 = piecewise (env_of_var_decls vdl) env1 in ()
   |> fail_if_false (subseteq nl f_univ) ("Next of " ^ f ^ " not in contract functions");
-  List.for_all (typecheck_cmd1 env') cl
+  List.for_all (typecheck_cmd1 env2) cl
 
 let typecheck_fun f_univ env = function
   | ConstrNF(a,fml,cl,nl) -> ()
     |> fail_if_false (no_dup (List.map snd a)) "Duplicate arguments in constructor "
-    |> fun _ -> typecheck_fun_gen f_univ env ("constructor",a,fml,cl,nl)
-  | ProcNF(f,a,fml,_,cl,nl) -> () (* FIXME: local variables *)
+    |> fun _ -> typecheck_fun_gen f_univ env ("constructor",a,fml,EmptyVarDecls,cl,nl)
+  | ProcNF(f,a,fml,vdl,cl,nl) -> () (* FIXME: local variables *)
     |> fail_if_false (no_dup (List.map snd a)) ("Duplicate arguments in function ")
-    |> fun _ -> typecheck_fun_gen f_univ env (f,a,fml,cl,nl)
+    |> fun _ -> typecheck_fun_gen f_univ env (f,a,fml,vdl,cl,nl)
 
 let typecheck c = match c with ContractNF(_,vl,fdl) -> 
   let f_univ = List.fold_left (fun fl fd -> match fd with ProcNF(f,_,_,_,_,_) -> f::fl | _ -> fl) [] fdl in
-  let env = env_of_gdecls vl in 
+  let env = env_of_var_decls vl in 
   c
   |> fail_if_false (no_dup (vars_of_var_decls vl)) "Duplicate global variables" 
   |> fun _ -> List.for_all (typecheck_fun f_univ env) fdl

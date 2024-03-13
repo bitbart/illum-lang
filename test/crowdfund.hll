@@ -5,7 +5,7 @@ contract Crowdfund {
     address owner;
 
     constructor(uint d, uint t, address O) {
-        funds = emptymap; 
+        // funds = emptymap; 
         owner = O;
         deadline = d; 
         target = t;

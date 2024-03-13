@@ -67,7 +67,6 @@ type fun_decls = EmptyFunDecls | FunDeclSeq of fun_decl * fun_decls
 
 type contract = Contract of ide * var_decls * fun_decls
 
-
 (******************************************************************************)
 (*                          NF0: lists for seq and if branches                *)
 (******************************************************************************)

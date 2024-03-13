@@ -6,8 +6,8 @@ contract PaymentSplitter {
     address owner;
 
     constructor(address o) {
-	    shares = emptymap;
-	    released = emptymap;
+	    // shares = emptymap;
+	    // released = emptymap;
 	    owner = o;
 	    totalShares = 0;
 	    totalReleased = 0;
@@ -24,7 +24,9 @@ contract PaymentSplitter {
     function receive(int v) input(v:T) {  
     } next(receive,release)
 
-    function release(address a) { 
+    function release(address a) {
+        uint payment;
+        uint totalReceived; 
         require(shares[a] > 0);
         totalReceived = balance(T) + totalReleased;
         payment = (totalReceived * shares[a]) / totalShares - released[a];
