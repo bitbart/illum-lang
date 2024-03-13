@@ -94,21 +94,22 @@ let string_of_nexts = function
     [] -> ""
   | l -> " next(" ^ (List.fold_left (fun s f -> s ^ (if s<>"" then "," else "") ^ f) "" l) ^ ")"
 
+let rec string_of_var_decls = function
+| EmptyVarDecls -> "\n"
+| VarDeclSeq(vd,vds) -> "\n" ^ 
+    tabs 1 (string_of_var_decl vd) ^ ";" ^ 
+    (string_of_var_decls vds)
+
 let string_of_fun_decl = function  
   | Constr(a,fml,c,nl) -> 
     "\n" ^ tabs 1 ("constructor " ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmods fml) ^ "{\n") ^ 
       (if c=Skip then "" else (string_of_cmd 2 c) ^ "\n") ^ 
     tabs 1 "}" ^ (string_of_nexts nl)                
-  | Proc(f,a,fml,c,nl) -> 
-    "\n" ^ tabs 1 ("function " ^ f ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmods fml) ^ "{\n") ^ 
+  | Proc(f,a,fml,vdl,c,nl) -> 
+    "\n" ^ tabs 1 ("function " ^ f ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmods fml) ^ "{\n") ^
+      (string_of_var_decls vdl) ^ 
       (if c=Skip then "" else (string_of_cmd 2 c) ^ "\n") ^
     tabs 1 "}" ^ (string_of_nexts nl)
-
-let rec string_of_var_decls = function
-  EmptyVarDecls -> "\n"
-| VarDeclSeq(vd,vds) -> "\n" ^ 
-    tabs 1 (string_of_var_decl vd) ^ ";" ^ 
-    (string_of_var_decls vds)
 
 let rec string_of_fun_decls = function
   EmptyFunDecls -> "" 
@@ -174,9 +175,10 @@ let string_of_fun_declNF = function
     "\n" ^ tabs 1 ("constructor" ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmodsNF fml) ^ " {\n") ^ 
       (if c=[] then "" else (string_of_cmdNF 2 c) ^ "\n") ^ 
     tabs 1 "}" ^ (string_of_nexts nl)                
-  | ProcNF(f,a,fml,c,nl) -> 
+  | ProcNF(f,a,fml,vdl,c,nl) -> 
     "\n" ^ tabs 1 ("function " ^ f ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmodsNF fml) ^ " {\n") ^ 
-      (if c=[] then "" else (string_of_cmdNF 2 c) ^ "\n") ^
+    (string_of_var_decls vdl) ^
+    (if c=[] then "" else (string_of_cmdNF 2 c) ^ "\n") ^
     tabs 1 "}" ^ (string_of_nexts nl)
 
 let string_of_fun_declsNF = List.fold_left 

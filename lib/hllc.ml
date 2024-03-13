@@ -118,7 +118,7 @@ let hllc_body f al fml xl tl cl =
 
 let hllc_post_branch xl tl = function
  | ConstrNF(_,_,_,_) -> failwith "hllc_post_branch: constructor not implemented"  
- | ProcNF(g,_,fml,_,_) -> 
+ | ProcNF(g,_,fml,_,_,_) -> 
     let exl = List.map (fun x -> Var x) xl in
     let etl = List.map (fun t -> Var (tokbal t)) tl in
     (decs fml.auths fml.afters [], Call [(g,exl @ etl)]) (* FIXME: questionmark parameter *)
@@ -131,13 +131,13 @@ let hllc_post f xl tl nl fdl =
   walp = [];
   prep = True;
   cntr =
-  List.filter (fun fd -> match fd with ProcNF(g,_,_,_,_) -> List.mem g nl | _ -> false) fdl
+  List.filter (fun fd -> match fd with ProcNF(g,_,_,_,_,_) -> List.mem g nl | _ -> false) fdl
   |> List.map (hllc_post_branch xl tl) 
 }
 
 let hllc_fun xl tl fdl = function
   | ConstrNF(_ (* a *),_ (* fml *),_ (* c *),_ (* nl *)) -> [] (* ConstrNF(a,fml,nf2_cmd xl (toks_of_cmd c) c,nl) *)
-  | ProcNF(f,al,fml,cl,nl) -> [ hllc_body f (List.map snd al) fml xl tl cl; hllc_post f xl tl nl fdl ]
+  | ProcNF(f,al,fml,_,cl,nl) -> [ hllc_body f (List.map snd al) fml xl tl cl; hllc_post f xl tl nl fdl ]
 
 let complete_next f_univ = function
 | [] -> f_univ
@@ -145,10 +145,10 @@ let complete_next f_univ = function
 
 let fix_next f_univ = function
 | ConstrNF(a,fml,cl,nl) -> ConstrNF(a,fml,cl,complete_next f_univ nl)
-| ProcNF(f,al,fml,cl,nl) -> ProcNF(f,al,fml,cl,complete_next f_univ nl)
+| ProcNF(f,al,fml,vdl,cl,nl) -> ProcNF(f,al,fml,vdl,cl,complete_next f_univ nl)
 
 let hllc_nf = function ContractNF(_,vl,fdl) ->
-  let f_univ = List.fold_left (fun fl fd -> match fd with ProcNF(f,_,_,_,_) -> f::fl | _ -> fl) [] fdl in 
+  let f_univ = List.fold_left (fun fl fd -> match fd with ProcNF(f,_,_,_,_,_) -> f::fl | _ -> fl) [] fdl in 
   let fdl' = List.map (fix_next f_univ) fdl in 
   List.flatten (List.map (fun fd -> hllc_fun (vars_of_var_decls vl) (toks_of_fun_decls fdl') fdl' fd) fdl')
    @ [ hllc_pay_clause "a" "v" "t"; hllc_check_clause "b" ]

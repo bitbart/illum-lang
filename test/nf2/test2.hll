@@ -3,7 +3,8 @@
 contract Test2 {
     int x; 
     int y;
-   
+    int w;
+    
     function f(address a, int z) {
         y = x + y + balance(T);
         x = x+y+2;

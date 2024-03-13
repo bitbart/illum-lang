@@ -9,12 +9,14 @@ contract AMM  {
    	}
 
   	function swap0(uint x, address A, uint y) input(x:T0) {
+		uint tok;
 		tok = x*balance(T1)/(balance(T0)+x);
         require(balance(T1) > tok && tok>=y);
   		A.transfer(tok:T1);
   	}
 
-    function swap1(uint x, address A, uint y) input(x:T1) { 
+    function swap1(uint x, address A, uint y) input(x:T1) {
+		uint tok; 
 		tok = x*balance(T0)/(balance(T1)+x);
         require(balance(T0) > tok && tok>=y);
     	A.transfer(tok:T0);

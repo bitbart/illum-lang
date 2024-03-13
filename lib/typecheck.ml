@@ -27,18 +27,54 @@ let rec env_of_gdecls = function
 | VarDeclSeq(VarDecl(t,x),vl') -> bind (env_of_gdecls vl') x (TBase t)
 | VarDeclSeq(MapDecl(t1,t2,x),vl') -> bind (env_of_gdecls vl') x (TMap(t1,t2))
 
+let unbox = function
+| TBase b -> b
+| _ -> failwith "unbox: not a base type"
+
+let bsubtype b1 b2 = match b1,b2 with
+| (t1,t2) when t1=t2 -> true
+| (TUint,TInt) -> true
+| _ -> false
+let subtype t1 t2 = match t1,t2 with
+| (TBase b1,TBase b2) -> bsubtype b1 b2
+| (TMap(b1,b2),TMap(b1',b2')) -> (bsubtype b2 b2') && (bsubtype b1' b1)
+| _ -> false
+let bjoin b1 b2 = match b1,b2 with
+| (b1,b2) when b1=b2 -> b1
+| (TUint,TInt) -> TInt
+| (TInt,TUint) -> TInt
+| _ -> failwith "bjoin: incompatible types"
+let bmeet b1 b2 = match b1,b2 with
+| (b1,b2) when b1=b2 -> b1
+| (TUint,TInt) -> TUint
+| (TInt,TUint) -> TUint
+| _ -> failwith "bmeet: incompatible types"
+let meet t1 t2 = match t1,t2 with
+| (TBase b1,TBase b2) -> TBase (bmeet b1 b2)
+| (TMap(b1,b2),TMap(b1',b2')) -> TMap(bjoin b1 b1',bmeet b2 b2')
+| _ -> failwith "meet: incompatible types"
+
 let expect_type e t_act t_exp =
-  if t_exp = t_act then true
+  if subtype t_act t_exp then true
   else failwith (string_of_type_error(e,t_act,t_exp))
 
-  let rec typecheck_expr env = function
+let expect_comparable e t1 t2 =
+    if subtype t1 t2 || subtype t2 t1 then true
+    else failwith (string_of_type_error(e,t1,t2)) (* FIXME: adapt error string *)
+  
+let rec typecheck_expr env = function
 | True 
 | False -> TBase TBool
-| IntConst _
-| AddrConst _ -> TBase TInt
+| IntConst _ -> TBase TUint
+| AddrConst _ -> TBase TAddr
 | StringConst _ -> TBase TString
 | Var x -> env x
-| Map(_,_) -> failwith "typecheck_expr: Map not implemented" (* FIXME *)
+| Map(e1,e2) -> (match typecheck_expr env e1 with
+  | TMap(b1,b2) -> 
+    let t2 = typecheck_expr env e2 in
+    expect_type e2 t2 (TBase b1) 
+    |> fun _ -> TBase b2
+  | _ -> failwith ("Type error: " ^ string_of_expr e1 ^ " in " ^ string_of_expr (Map(e1,e2)) ^ " is not a mapping"))
 | Not e' -> 
     expect_type e' (typecheck_expr env e') (TBase TBool) 
     |> fun _ -> TBase TBool 
@@ -51,9 +87,11 @@ let expect_type e t_act t_exp =
 | Sub(e1,e2)
 | Mul(e1,e2)
 | Div(e1,e2) -> 
-    expect_type e1 (typecheck_expr env e1) (TBase TInt)
-    |> fun _ -> expect_type e2 (typecheck_expr env e2) (TBase TInt)
-    |> fun _ -> (TBase TInt)
+    let t1 = typecheck_expr env e1 in
+    let t2 = typecheck_expr env e2 in
+    expect_type e1 t1 (TBase TInt)
+    |> fun _ -> expect_type e2 t2 (TBase TInt)
+    |> fun _ -> meet t1 t2
 | Eq(e1,e2)
 | Neq(e1,e2)
 | Leq(e1,e2)
@@ -62,7 +100,7 @@ let expect_type e t_act t_exp =
 | Ge(e1,e2) -> 
     let t1 = typecheck_expr env e1 in 
     let t2 = typecheck_expr env e2 in
-    expect_type e2 t1 t2
+    expect_comparable e2 t1 t2
     |> fun _ -> TBase TBool
 | Bal(_)
 | BalPre(_) -> TBase TInt
@@ -71,10 +109,14 @@ let expect_type e t_act t_exp =
   let t2 = typecheck_expr env e2 in
   let t3 = typecheck_expr env e3 in
   expect_type e1 t1 (TBase TBool)
-  |> fun _ -> expect_type e2 t2 t3
-  |> fun _ -> t2
-| MapUpd(_,_,_) -> failwith "FIXME"
-
+  |> fun _ -> expect_comparable e2 t2 t3
+  |> fun _ -> meet t2 t3
+| MapUpd(e1,e2,e3) -> 
+  let t1 = typecheck_expr env e1 in 
+  let b2 = unbox (typecheck_expr env e2) in
+  let b3 = unbox (typecheck_expr env e3) in
+  expect_type e1 (TMap(b2,b3)) t1
+  |> fun _ -> (TMap(b2,b3))
 let typecheck_cmd1 (env:ide -> hlltype) = function
 | SkipNF -> true
 | VarAssignNF(x,e) -> expect_type e (typecheck_expr env e) (env x)
@@ -94,12 +136,12 @@ let typecheck_fun f_univ env = function
   | ConstrNF(a,fml,cl,nl) -> ()
     |> fail_if_false (no_dup (List.map snd a)) "Duplicate arguments in constructor "
     |> fun _ -> typecheck_fun_gen f_univ env ("constructor",a,fml,cl,nl)
-  | ProcNF(f,a,fml,cl,nl) -> ()
+  | ProcNF(f,a,fml,_,cl,nl) -> () (* FIXME: local variables *)
     |> fail_if_false (no_dup (List.map snd a)) ("Duplicate arguments in function ")
     |> fun _ -> typecheck_fun_gen f_univ env (f,a,fml,cl,nl)
 
 let typecheck c = match c with ContractNF(_,vl,fdl) -> 
-  let f_univ = List.fold_left (fun fl fd -> match fd with ProcNF(f,_,_,_,_) -> f::fl | _ -> fl) [] fdl in
+  let f_univ = List.fold_left (fun fl fd -> match fd with ProcNF(f,_,_,_,_,_) -> f::fl | _ -> fl) [] fdl in
   let env = env_of_gdecls vl in 
   c
   |> fail_if_false (no_dup (vars_of_var_decls vl)) "Duplicate global variables" 

@@ -1,5 +1,6 @@
 contract Test4 {
     int n; 
+    int m;
     
     function f(address a) {
         a.transfer(5:T); 

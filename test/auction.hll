@@ -1,5 +1,5 @@
 contract Auction {
-    uint t; 	//  timeout
+    uint t; 	// timeout
     uint m; 	// min bid
     address W; 	// winner  
     address A; 	// owner

@@ -1,4 +1,6 @@
 contract Test7 {    
+    uint n;
+    
     function f() {
         if (n==1) { 
             n = 20;

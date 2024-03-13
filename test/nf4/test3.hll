@@ -1,7 +1,7 @@
 // Test NF4: mapping read, mapping write
 
 contract Test3 {
-    mapping (address => uint) m; 
+    mapping (uint => int) m; 
     int y;
 
     function f(int x) {

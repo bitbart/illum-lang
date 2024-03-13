@@ -57,11 +57,11 @@ type var_decl =
   | VarDecl of btype * ide
   | MapDecl of btype * btype * ide
 
+and var_decls = EmptyVarDecls | VarDeclSeq of var_decl * var_decls
+
 and fun_decl =
   | Constr of args * fmods * cmd * (ide list)
-  | Proc of ide * args * fmods * cmd * (ide list)           
-
-type var_decls = EmptyVarDecls | VarDeclSeq of var_decl * var_decls
+  | Proc of ide * args * fmods * var_decls * cmd * (ide list)           
 
 type fun_decls = EmptyFunDecls | FunDeclSeq of fun_decl * fun_decls
 
@@ -89,7 +89,7 @@ type fmodsNF = {
 
 type fun_declNF =
   | ConstrNF of args * fmodsNF * cmdNF * (ide list)
-  | ProcNF of ide * args * fmodsNF * cmdNF * (ide list)           
+  | ProcNF of ide * args * fmodsNF * var_decls * cmdNF * (ide list)           
 
 type contractNF = ContractNF of ide * var_decls * (fun_declNF list)
 

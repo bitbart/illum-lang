@@ -1,8 +1,9 @@
 // Test NF1: mapping write, mapping read, require, if-else
 
 contract Test10 {                   
+  mapping (int => int) x;
 
-  function f() {
+  function f(int i, uint j) {
     x[i] = 0;
     require(x[j]==1);
     if (x[j]==2) {

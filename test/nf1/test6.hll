@@ -1,4 +1,7 @@
 contract Test6 {    
+    uint n;
+    uint m;
+
     function f() {
         if (n==1) { 
             n = n+1; 

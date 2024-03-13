@@ -32,7 +32,7 @@ let fmodsNF_of_fmods fml =
 
 let fun_declNF_of_fun_decl = function
   | Constr(xl,fml,c,nl) -> ConstrNF(xl,fmodsNF_of_fmods fml,cmdNF_of_cmd c,nl)
-  | Proc(f,xl,fml,c,nl) -> ProcNF(f,xl,fmodsNF_of_fmods fml,cmdNF_of_cmd c,nl)
+  | Proc(f,xl,fml,vdl,c,nl) -> ProcNF(f,xl,fmodsNF_of_fmods fml,vdl,cmdNF_of_cmd c,nl)
 
 let rec fun_declsNF_of_fun_decls = function
   | EmptyFunDecls -> []
@@ -59,7 +59,7 @@ let is_nf1_cmd = function
 
 let is_nf1_fun = function
   | ConstrNF(_,_,c,_) 
-  | ProcNF(_,_,_,c,_) -> is_nf1_cmd c
+  | ProcNF(_,_,_,_,c,_) -> is_nf1_cmd c
 
 let is_nf1 = function
   ContractNF(_,_,fdl) -> List.for_all is_nf1_fun fdl
@@ -123,7 +123,7 @@ let rec nf1_cmd = function
 
 let nf1_fun = function
   | ConstrNF(a,fml,c,nl) -> ConstrNF(a,fml,nf1_cmd c,nl) 
-  | ProcNF(f,a,fml,c,nl) -> ProcNF(f,a,fml,nf1_cmd c,nl)
+  | ProcNF(f,a,fml,vdl,c,nl) -> ProcNF(f,a,fml,vdl,nf1_cmd c,nl)
 
 let nf1 = function
   ContractNF(x,vl,fdl) -> ContractNF(x, vl, List.map nf1_fun fdl)
@@ -152,7 +152,7 @@ let is_nf2_cmd = function
 
 let is_nf2_fun = function
   | ConstrNF(_,_,c,_) 
-  | ProcNF(_,_,_,c,_) -> is_nf2_cmd c
+  | ProcNF(_,_,_,_,c,_) -> is_nf2_cmd c
 
 let is_nf2 = function
   ContractNF(_,_,fdl) -> List.for_all is_nf2_fun fdl
@@ -235,7 +235,7 @@ let nf2_cmd xl tl zl = function
 
 let nf2_fun xl = function
   | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf2_cmd xl (toks_of_cmd c) (List.map snd al) c,nl) 
-  | ProcNF(f,al,fml,c,nl) -> ProcNF(f,al,fml,nf2_cmd xl (toks_of_cmd c) (List.map snd al) c,nl)
+  | ProcNF(f,al,fml,vdl,c,nl) -> ProcNF(f,al,fml,vdl,nf2_cmd xl (toks_of_cmd c) (List.map snd al) c,nl)
 
 let nf2 = function ContractNF(x,vl,fdl) -> 
   ContractNF(x,vl,List.map (fun f -> nf2_fun (vars_of_var_decls vl) f) fdl)
@@ -263,7 +263,7 @@ let is_nf3_cmd = function
 
 let is_nf3_fun = function
   | ConstrNF(_,_,c,_) 
-  | ProcNF(_,_,_,c,_) -> is_nf3_cmd c
+  | ProcNF(_,_,_,_,c,_) -> is_nf3_cmd c
 
 let is_nf3 = function
   ContractNF(_,_,fdl) -> List.for_all is_nf3_fun fdl
@@ -284,7 +284,7 @@ let rec nf3_cmd = function
 
 let nf3_fun = function
   | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf3_cmd c,nl) 
-  | ProcNF(f,al,fml,c,nl) -> ProcNF(f,al,fml,nf3_cmd c,nl)
+  | ProcNF(f,al,fml,vdl,c,nl) -> ProcNF(f,al,fml,vdl,nf3_cmd c,nl)
 
 let nf3 = function ContractNF(x,vl,fdl) -> 
   ContractNF(x,vl,List.map nf3_fun fdl)
@@ -307,7 +307,7 @@ let is_nf4_cmd = function
 
 let is_nf4_fun = function
   | ConstrNF(_,_,c,_) 
-  | ProcNF(_,_,_,c,_) -> is_nf4_cmd c
+  | ProcNF(_,_,_,_,c,_) -> is_nf4_cmd c
 
 let is_nf4 = function
   ContractNF(_,_,fdl) -> List.for_all is_nf4_fun fdl
@@ -334,7 +334,7 @@ let rec nf4_cmd = function
 
 let nf4_fun = function
   | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf4_cmd c,nl) 
-  | ProcNF(f,al,fml,c,nl) -> ProcNF(f,al,fml,nf4_cmd c,nl)
+  | ProcNF(f,al,fml,vdl,c,nl) -> ProcNF(f,al,fml,vdl,nf4_cmd c,nl)
 
 let nf4 = function ContractNF(x,vl,fdl) -> 
   ContractNF(x,vl,List.map nf4_fun fdl)

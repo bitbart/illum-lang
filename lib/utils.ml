@@ -156,7 +156,7 @@ and toks_of_cmd cl = List.fold_left (fun tl c -> union tl (toks_of_cmd1 c)) [] c
 
 let toks_of_fun = function
   | ConstrNF(_,_,c,_) 
-  | ProcNF(_,_,_,c,_) -> toks_of_cmd c
+  | ProcNF(_,_,_,_,c,_) -> toks_of_cmd c
 
 let toks_of_fun_decls = List.fold_left (fun tl f -> union tl (toks_of_fun f)) []
 

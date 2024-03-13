@@ -156,21 +156,15 @@ nexts:
   | NEXT; LPAREN; nl = separated_list(ARGSEP, fname); RPAREN; { nl } 
 ;
 
-(*
-var_decls:
-  | vdl = separated_nonempty_list(CMDSEP, var_decl) { vdl }
-;
-*)
-
 fun_decl:
   | CONSTR; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; RBRACE; nl=nexts { Constr(a,fml,Skip,nl) }
   | CONSTR; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; RBRACE { Constr(a,fml,Skip,[]) }
   | CONSTR; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; c = cmd; RBRACE; nl = nexts; { Constr(a,fml,c,nl) }
   | CONSTR; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; c = cmd; RBRACE { Constr(a,fml,c,[]) }
-  | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; RBRACE; nl = nexts; { Proc(f,a,fml,Skip,nl) }
-  | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; RBRACE; { Proc(f,a,fml,Skip,[]) }
-  | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; c = cmd; RBRACE; nl = nexts; { Proc(f,a,fml,c,nl) }
-  | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; c = cmd; RBRACE; { Proc(f,a,fml,c,[]) }
+  | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; RBRACE; nl = nexts; { Proc(f,a,fml,EmptyVarDecls,Skip,nl) }
+  | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; RBRACE; { Proc(f,a,fml,EmptyVarDecls,Skip,[]) }
+  | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; vdl = var_decls; c = cmd; RBRACE; nl = nexts; { Proc(f,a,fml,vdl,c,nl) }
+  | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; vdl = var_decls; c = cmd; RBRACE; { Proc(f,a,fml,vdl,c,[]) }
 ;
 
 fun_decls:
