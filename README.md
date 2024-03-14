@@ -1,7 +1,7 @@
 # ILLUM: an Intermediate-Level Language for the UTXO Model
 
-The project implements a compiler from the HeLLUM contract langauge to the ILLUM intermediate language. 
-HeLLUM is a subset of Solidity that is suitable to be executed on UTXO blockchains.
+The project implements a compiler from the HeLLUM contract language to the ILLUM intermediate language. 
+HeLLUM is a subset of Solidity that is suitable to be executed on UTXO blockchains like Cardano.
 
 For example, the following is an [Auction contract](test/auction.hll) in HeLLUM:
 ```
@@ -18,7 +18,9 @@ contract Auction {
         W = address(0);
     }
     
-    function bid(uint v, address X) input(v:T) {
+    function bid(uint v, address X) 
+      input(v:T)  // receives v tokens of type T 
+    { 
         require(X!=address(0) && v>=m && v>balance(T));
         if (W!=address(0))
             W.transfer((balance(T)-v):T);
@@ -26,8 +28,8 @@ contract Auction {
     }
         
     function close() 
-        auth(A) 
-        after(t) 
+        auth(A)   // requires A's authorization
+        after(t)  // can be called after block t
     {
         A.transfer(balance(T):T);
     }
@@ -63,14 +65,13 @@ In case the previous command shows an empty list, you must manually create a swi
 ```bash
 opam switch create illum ocaml-base-compiler.4.14.0
 ```
-This creates a switch for the LIP course with the given version of the OCaml compiler.
 
 The following command updates environment variables, to make OCaml commands available on the current switch:
 ```bash
 eval $(opam env)
 ```
 
-Finally, install a few extra OCaml packages:
+Finally, we need a few extra OCaml packages:
 ```bash
 opam install -y dune ocaml-lsp-server odoc ocamlformat menhir ppx_inline_test
 ```
@@ -81,11 +82,11 @@ In particular, this installation includes:
 
 ## Running the ILLUM compiler
 
-After cloning the repository, you can run a collection of tests through the command from the `illum-lang` directory:
+After cloning the repository, you can run a collection of tests through the following command, launched from the `illum-lang` directory:
 ```bash
 dune test 
 ```
-If everything is ok, then the command will produce no output.
+If everything is ok, the command will produce no output.
 
 To run the HeLLUM compiler:
 ```
