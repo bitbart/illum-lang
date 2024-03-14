@@ -124,9 +124,9 @@ let typecheck_fun_gen f_univ env (f,a,_,vdl,cl,nl) =
   List.for_all (typecheck_cmd1 env2) cl
 
 let typecheck_fun f_univ env = function
-  | ConstrNF(a,fml,cl,nl) -> ()
+  | ConstrNF(a,fml,vdl,cl,nl) -> ()
     |> fail_if_false (no_dup (List.map snd a)) "Duplicate arguments in constructor "
-    |> fun _ -> typecheck_fun_gen f_univ env ("constructor",a,fml,[],cl,nl)
+    |> fun _ -> typecheck_fun_gen f_univ env ("constructor",a,fml,vdl,cl,nl)
   | ProcNF(f,a,fml,vdl,cl,nl) -> () (* FIXME: local variables *)
     |> fail_if_false (no_dup (List.map snd a)) ("Duplicate arguments in function ")
     |> fun _ -> typecheck_fun_gen f_univ env (f,a,fml,vdl,cl,nl)

@@ -61,7 +61,7 @@ type var_decl =
 and var_decls = EmptyVarDecls | VarDeclSeq of var_decl * var_decls
 
 and fun_decl =
-  | Constr of args * fmods * cmd * (ide list)
+  | Constr of args * fmods * var_decls * cmd * (ide list)
   | Proc of ide * args * fmods * var_decls * cmd * (ide list)           
 
 type fun_decls = EmptyFunDecls | FunDeclSeq of fun_decl * fun_decls
@@ -90,7 +90,7 @@ type fmodsNF = {
 type var_declsNF = (ide * hlltype) list
 
 type fun_declNF =
-  | ConstrNF of args * fmodsNF * cmdNF * (ide list)
+  | ConstrNF of args * fmodsNF * var_declsNF * cmdNF * (ide list)
   | ProcNF of ide * args * fmodsNF * var_declsNF * cmdNF * (ide list)           
 
 type contractNF = ContractNF of ide * var_declsNF * (fun_declNF list)

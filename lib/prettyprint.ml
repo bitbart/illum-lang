@@ -131,9 +131,10 @@ let rec string_of_var_declsNF t = function
       tabs (t+1) (string_of_hlltype tx ^ " " ^ x ^ ";" ^ "\n" ^ s)
   
 let string_of_fun_declNF = function
-  | ConstrNF(a,fml,c,nl) -> 
+  | ConstrNF(a,fml,vdl,c,nl) -> 
     "\n" ^ tabs 1 ("constructor" ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmodsNF fml) ^ " {\n") ^ 
-      (if c=[] then "" else (string_of_cmdNF 2 c) ^ "\n") ^ 
+    (string_of_var_declsNF 1 vdl) ^
+    (if c=[] then "" else (string_of_cmdNF 2 c) ^ "\n") ^ 
     tabs 1 "}" ^ (string_of_nexts nl)                
   | ProcNF(f,a,fml,vdl,c,nl) -> 
     "\n" ^ tabs 1 ("function " ^ f ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmodsNF fml) ^ " {\n") ^ 

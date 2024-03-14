@@ -157,10 +157,10 @@ nexts:
 ;
 
 fun_decl:
-  | CONSTR; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; RBRACE; nl=nexts { Constr(a,fml,Skip,nl) }
-  | CONSTR; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; RBRACE { Constr(a,fml,Skip,[]) }
-  | CONSTR; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; c = cmd; RBRACE; nl = nexts; { Constr(a,fml,c,nl) }
-  | CONSTR; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; c = cmd; RBRACE { Constr(a,fml,c,[]) }
+  | CONSTR; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; vdl = var_decls; RBRACE; nl=nexts { Constr(a,fml,vdl,Skip,nl) }
+  | CONSTR; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; vdl = var_decls; RBRACE { Constr(a,fml,vdl,Skip,[]) }
+  | CONSTR; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; vdl = var_decls; c = cmd; RBRACE; nl = nexts; { Constr(a,fml,vdl,c,nl) }
+  | CONSTR; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; vdl = var_decls; c = cmd; RBRACE { Constr(a,fml,vdl,c,[]) }
   | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; vdl = var_decls; RBRACE; nl = nexts; { Proc(f,a,fml,vdl,Skip,nl) }
   | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; vdl = var_decls; RBRACE; { Proc(f,a,fml,vdl,Skip,[]) }
   | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; vdl = var_decls; c = cmd; RBRACE; nl = nexts; { Proc(f,a,fml,vdl,c,nl) }

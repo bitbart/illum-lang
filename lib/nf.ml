@@ -36,7 +36,7 @@ let rec var_declsNF_of_var_decls = function
 | VarDeclSeq(MapDecl(t1,t2,x),vl') -> (x,TMap(t1,t2))::(var_declsNF_of_var_decls vl')
 
 let fun_declNF_of_fun_decl = function
-  | Constr(xl,fml,c,nl) -> ConstrNF(xl,fmodsNF_of_fmods fml,cmdNF_of_cmd c,nl)
+  | Constr(xl,fml,vdl,c,nl) -> ConstrNF(xl,fmodsNF_of_fmods fml,var_declsNF_of_var_decls vdl,cmdNF_of_cmd c,nl)
   | Proc(f,xl,fml,vdl,c,nl) -> ProcNF(f,xl,fmodsNF_of_fmods fml,var_declsNF_of_var_decls vdl,cmdNF_of_cmd c,nl)
 
 let rec fun_declsNF_of_fun_decls = function
@@ -63,7 +63,7 @@ let is_nf1_cmd = function
 | cl -> List.for_all is_nf1_cmd1 cl
 
 let is_nf1_fun = function
-  | ConstrNF(_,_,c,_) 
+  | ConstrNF(_,_,_,c,_) 
   | ProcNF(_,_,_,_,c,_) -> is_nf1_cmd c
 
 let is_nf1 = function
@@ -127,7 +127,7 @@ let rec nf1_cmd = function
 | _ -> failwith "nf1_cmd: should never happen"
 
 let nf1_fun = function
-  | ConstrNF(a,fml,c,nl) -> ConstrNF(a,fml,nf1_cmd c,nl) 
+  | ConstrNF(a,fml,vdl,c,nl) -> ConstrNF(a,fml,vdl,nf1_cmd c,nl) 
   | ProcNF(f,a,fml,vdl,c,nl) -> ProcNF(f,a,fml,vdl,nf1_cmd c,nl)
 
 let nf1 = function
@@ -156,7 +156,7 @@ let is_nf2_cmd = function
 | cl -> is_ssa cl
 
 let is_nf2_fun = function
-  | ConstrNF(_,_,c,_) 
+  | ConstrNF(_,_,_,c,_) 
   | ProcNF(_,_,_,_,c,_) -> is_nf2_cmd c
 
 let is_nf2 = function
@@ -239,7 +239,7 @@ let nf2_cmd xl tl zl = function
     (c_init::cl')@[c_end]
 
 let nf2_fun xl = function
-  | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf2_cmd xl (toks_of_cmd c) (List.map snd al) c,nl) 
+  | ConstrNF(al,fml,vdl,c,nl) -> ConstrNF(al,fml,vdl,nf2_cmd xl (toks_of_cmd c) (List.map snd al) c,nl) 
   | ProcNF(f,al,fml,vdl,c,nl) -> ProcNF(f,al,fml,vdl,nf2_cmd xl (toks_of_cmd c) (List.map snd al) c,nl)
 
 let nf2 = function ContractNF(x,vl,fdl) -> 
@@ -267,7 +267,7 @@ let is_nf3_cmd = function
 | cl -> is_nf3_send cl
 
 let is_nf3_fun = function
-  | ConstrNF(_,_,c,_) 
+  | ConstrNF(_,_,_,c,_) 
   | ProcNF(_,_,_,_,c,_) -> is_nf3_cmd c
 
 let is_nf3 = function
@@ -288,7 +288,7 @@ let rec nf3_cmd = function
 | _ -> failwith "nf3_cmd: should never happen"
 
 let nf3_fun = function
-  | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf3_cmd c,nl) 
+  | ConstrNF(al,fml,vdl,c,nl) -> ConstrNF(al,fml,vdl,nf3_cmd c,nl) 
   | ProcNF(f,al,fml,vdl,c,nl) -> ProcNF(f,al,fml,vdl,nf3_cmd c,nl)
 
 let nf3 = function ContractNF(x,vl,fdl) -> 
@@ -311,7 +311,7 @@ let is_nf4_cmd = function
 | cl -> is_nf4_send cl
 
 let is_nf4_fun = function
-  | ConstrNF(_,_,c,_) 
+  | ConstrNF(_,_,_,c,_) 
   | ProcNF(_,_,_,_,c,_) -> is_nf4_cmd c
 
 let is_nf4 = function
@@ -338,7 +338,7 @@ let rec nf4_cmd = function
         [collapse_simassign (List.filter is_simassign cl)] 
 
 let nf4_fun = function
-  | ConstrNF(al,fml,c,nl) -> ConstrNF(al,fml,nf4_cmd c,nl) 
+  | ConstrNF(al,fml,vdl,c,nl) -> ConstrNF(al,fml,vdl,nf4_cmd c,nl) 
   | ProcNF(f,al,fml,vdl,c,nl) -> ProcNF(f,al,fml,vdl,nf4_cmd c,nl)
 
 let nf4 = function ContractNF(x,vl,fdl) -> 

@@ -117,7 +117,7 @@ let hllc_body f al fml xl tl cl =
 }
 
 let hllc_post_branch xl tl = function
- | ConstrNF(_,_,_,_) -> failwith "hllc_post_branch: constructor not implemented"  
+ | ConstrNF(_,_,_,_,_) -> failwith "hllc_post_branch: constructor not implemented"  
  | ProcNF(g,_,fml,_,_,_) -> 
     let exl = List.map (fun x -> Var x) xl in
     let etl = List.map (fun t -> Var (tokbal t)) tl in
@@ -136,7 +136,7 @@ let hllc_post f xl tl nl fdl =
 }
 
 let hllc_fun xl tl fdl = function
-  | ConstrNF(_ (* a *),_ (* fml *),_ (* c *),_ (* nl *)) -> [] (* ConstrNF(a,fml,nf2_cmd xl (toks_of_cmd c) c,nl) *)
+  | ConstrNF(al,fml,_,cl,nl) -> [ hllc_body "constructor" (List.map snd al) fml xl tl cl; hllc_post "constructor" xl tl nl fdl ]
   | ProcNF(f,al,fml,_,cl,nl) -> [ hllc_body f (List.map snd al) fml xl tl cl; hllc_post f xl tl nl fdl ]
 
 let complete_next f_univ = function
@@ -144,7 +144,7 @@ let complete_next f_univ = function
 | nl -> nl
 
 let fix_next f_univ = function
-| ConstrNF(a,fml,cl,nl) -> ConstrNF(a,fml,cl,complete_next f_univ nl)
+| ConstrNF(a,fml,vdl,cl,nl) -> ConstrNF(a,fml,vdl,cl,complete_next f_univ nl)
 | ProcNF(f,al,fml,vdl,cl,nl) -> ProcNF(f,al,fml,vdl,cl,complete_next f_univ nl)
 
 let hllc_nf = function ContractNF(_,vl,fdl) ->
