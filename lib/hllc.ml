@@ -150,7 +150,7 @@ let fix_next f_univ = function
 let hllc_nf = function ContractNF(_,vl,fdl) ->
   let f_univ = List.fold_left (fun fl fd -> match fd with ProcNF(f,_,_,_,_,_) -> f::fl | _ -> fl) [] fdl in 
   let fdl' = List.map (fix_next f_univ) fdl in 
-  List.flatten (List.map (fun fd -> hllc_fun (vars_of_var_decls vl) (toks_of_fun_decls fdl') fdl' fd) fdl')
+  List.flatten (List.map (fun fd -> hllc_fun (List.map fst vl) (toks_of_fun_decls fdl') fdl' fd) fdl')
    @ [ hllc_pay_clause "a" "v" "t"; hllc_check_clause "b" ]
 
 let hllc (c:contract) : clause list =

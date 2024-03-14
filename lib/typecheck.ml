@@ -3,16 +3,6 @@ open Utils
 open Prettyprint
 
 exception UnboundVar of ide
-type hlltype = TBase of btype | TMap of btype * btype
-
-let string_of_hlltype = function
-  | TBase t -> string_of_btype t
-  | TMap(t1,t2) -> "mapping(" ^ string_of_btype t1 ^ " => " ^ string_of_btype t2 ^ ")"
-
-let string_of_type_error(e,t_act,t_exp) =  
-  "Type error: " ^ string_of_expr e ^ 
-  " has type " ^ string_of_hlltype t_act ^ 
-  " but an expression was expected of type " ^ string_of_hlltype t_exp 
 
 (******************************************************************************)
 (*                          Type checking of NF0 contracts                    *)
@@ -23,9 +13,9 @@ let rec env_of_ldecls = function
     | (t,x)::l -> bind (env_of_ldecls l) x (TBase t)
 
 let rec env_of_var_decls = function
-| EmptyVarDecls -> fun x -> raise (UnboundVar x)
-| VarDeclSeq(VarDecl(t,x),vl') -> bind (env_of_var_decls vl') x (TBase t)
-| VarDeclSeq(MapDecl(t1,t2,x),vl') -> bind (env_of_var_decls vl') x (TMap(t1,t2))
+| [] -> fun x -> raise (UnboundVar x)
+| (x,t)::l -> bind (env_of_var_decls l) x t
+(*  VarDeclSeq(MapDecl(t1,t2,x),vl') -> bind (env_of_var_decls vl') x (TMap(t1,t2)) *) (* FIXME: remove? *)
 
 let unbox = function
 | TBase b -> b
@@ -136,7 +126,7 @@ let typecheck_fun_gen f_univ env (f,a,_,vdl,cl,nl) =
 let typecheck_fun f_univ env = function
   | ConstrNF(a,fml,cl,nl) -> ()
     |> fail_if_false (no_dup (List.map snd a)) "Duplicate arguments in constructor "
-    |> fun _ -> typecheck_fun_gen f_univ env ("constructor",a,fml,EmptyVarDecls,cl,nl)
+    |> fun _ -> typecheck_fun_gen f_univ env ("constructor",a,fml,[],cl,nl)
   | ProcNF(f,a,fml,vdl,cl,nl) -> () (* FIXME: local variables *)
     |> fail_if_false (no_dup (List.map snd a)) ("Duplicate arguments in function ")
     |> fun _ -> typecheck_fun_gen f_univ env (f,a,fml,vdl,cl,nl)
@@ -145,7 +135,7 @@ let typecheck c = match c with ContractNF(_,vl,fdl) ->
   let f_univ = List.fold_left (fun fl fd -> match fd with ProcNF(f,_,_,_,_,_) -> f::fl | _ -> fl) [] fdl in
   let env = env_of_var_decls vl in 
   c
-  |> fail_if_false (no_dup (vars_of_var_decls vl)) "Duplicate global variables" 
+  |> fail_if_false (no_dup (List.map fst vl)) "Duplicate global variables" 
   |> fun _ -> List.for_all (typecheck_fun f_univ env) fdl
   |> fun _ ->  c
 

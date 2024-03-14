@@ -46,24 +46,9 @@ and int_binop e1 e2 op =
   let s1,s2 = string_of_expr e1,string_of_expr e2 in
   addparen s1 (depth_expr e1) ^ op ^ addparen s2 (depth_expr e2) 
 
-and string_of_cmd t = function
-    Skip -> tabs t "skip;"
-  | VarAssign(x,e) -> tabs t (x ^ "=" ^ string_of_expr e ^ ";")
-  | Seq(c1,c2) -> (string_of_cmd t c1) ^ "\n" ^ (string_of_cmd t c2)
-  | If(e,c1,Skip) -> 
-    tabs t "if (" ^ string_of_expr e ^ ") {\n" ^ 
-      (string_of_cmd (t+1) c1) ^ 
-    "\n" ^ tabs t "}"
-  | If(e,c1,c2) -> 
-    tabs t "if (" ^ string_of_expr e ^ ") {\n" ^ 
-      (string_of_cmd (t+1) c1) ^ 
-    "\n" ^ tabs t "}" ^
-    "\n" ^ tabs t "else {\n" ^ 
-      (string_of_cmd (t+1) c2 ^ 
-    "\n" ^ tabs t "}")
-  | Xfer(x,e,tok) -> tabs t (x ^ ".transfer(" ^ (string_of_expr e) ^ ":" ^ tok ^ ");")
-  | Req(e) -> tabs t ("require " ^ string_of_expr e ^ ";")
-
+(******************************************************************************)
+(*                        Pretty-printing of HeLLUM types                     *)
+(******************************************************************************)
 
 let string_of_btype = function
   | TBool -> "bool"
@@ -72,56 +57,26 @@ let string_of_btype = function
   | TAddr -> "address"
   | TString -> "string"
 
-let string_of_arg (t,x)= (string_of_btype t) ^ " " ^ x
+let string_of_hlltype = function
+  | TBase t -> string_of_btype t
+  | TMap(t1,t2) -> "mapping(" ^ string_of_btype t1 ^ " => " ^ string_of_btype t2 ^ ")"
 
-let string_of_args = List.fold_left (fun s a -> s ^ (if s<>"" then "," else "") ^ (string_of_arg a)) ""
-
-let string_of_var_decl = function
-  | VarDecl(t,x) -> string_of_btype t ^ " " ^ x
-  | MapDecl(t1,t2,x) -> "mapping (" ^ string_of_btype t1 ^ " => " ^ string_of_btype t2 ^ ") " ^ x    
-
-let string_of_fmod = function
-  | AuthFMod(x)-> "auth(" ^ x ^ ")"
-  | AfterFMod(e) -> "after(" ^ string_of_expr e ^ ")"
-  | InputFMod(e,t) -> "input(" ^ string_of_expr e ^ ":" ^ t ^ ")"
-
-let rec string_of_fmods = function
-  | EmptyFMods -> ""
-  | FModSeq(fm,EmptyFMods) -> " " ^ (string_of_fmod fm) ^ " " 
-  | FModSeq(fm,fml) -> " " ^ (string_of_fmod fm) ^ (string_of_fmods fml)
-
-let string_of_nexts = function 
-    [] -> ""
-  | l -> " next(" ^ (List.fold_left (fun s f -> s ^ (if s<>"" then "," else "") ^ f) "" l) ^ ")"
-
-let rec string_of_var_decls = function
-| EmptyVarDecls -> "\n"
-| VarDeclSeq(vd,vds) -> "\n" ^ 
-    tabs 1 (string_of_var_decl vd) ^ ";" ^ 
-    (string_of_var_decls vds)
-
-let string_of_fun_decl = function  
-  | Constr(a,fml,c,nl) -> 
-    "\n" ^ tabs 1 ("constructor " ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmods fml) ^ "{\n") ^ 
-      (if c=Skip then "" else (string_of_cmd 2 c) ^ "\n") ^ 
-    tabs 1 "}" ^ (string_of_nexts nl)                
-  | Proc(f,a,fml,vdl,c,nl) -> 
-    "\n" ^ tabs 1 ("function " ^ f ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmods fml) ^ "{\n") ^
-      (string_of_var_decls vdl) ^ 
-      (if c=Skip then "" else (string_of_cmd 2 c) ^ "\n") ^
-    tabs 1 "}" ^ (string_of_nexts nl)
-
-let rec string_of_fun_decls = function
-  EmptyFunDecls -> "" 
-| FunDeclSeq(fd,fds) -> (string_of_fun_decl fd) ^ "\n" ^ (string_of_fun_decls fds)
-
-let string_of_contract (Contract(c,vdl,fdl)) = 
-  "contract " ^ c ^ " { " ^ (string_of_var_decls vdl) ^ (string_of_fun_decls fdl) ^ " }"
-
+let string_of_type_error(e,t_act,t_exp) =  
+  "Type error: " ^ string_of_expr e ^ 
+  " has type " ^ string_of_hlltype t_act ^ 
+  " but an expression was expected of type " ^ string_of_hlltype t_exp 
 
 (******************************************************************************)
 (*                        Pretty-printing of NF contracts                     *)
 (******************************************************************************)
+
+let string_of_arg (t,x)= (string_of_btype t) ^ " " ^ x
+
+let string_of_args = List.fold_left (fun s a -> s ^ (if s<>"" then "," else "") ^ (string_of_arg a)) ""
+
+let string_of_nexts = function 
+    [] -> ""
+  | l -> " next(" ^ (List.fold_left (fun s f -> s ^ (if s<>"" then "," else "") ^ f) "" l) ^ ")"
 
 let rec string_of_cmdNF1 t = function
   | SkipNF -> tabs t "skip;"
@@ -170,6 +125,11 @@ let string_of_fmodsNF (m: fmodsNF) : string =
   (if m.inputs = [] then ""
   else " input(" ^ (List.fold_left (fun s (e,t) -> s ^ (if s<>"" then "," else "") ^ (string_of_expr e) ^ ":" ^ t) "" (m.inputs)) ^ ")")
 
+let rec string_of_var_declsNF t = function
+  | [] -> ""
+  | (x,tx)::l -> let s = string_of_var_declsNF t l in 
+      tabs (t+1) (string_of_hlltype tx ^ " " ^ x ^ ";" ^ "\n" ^ s)
+  
 let string_of_fun_declNF = function
   | ConstrNF(a,fml,c,nl) -> 
     "\n" ^ tabs 1 ("constructor" ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmodsNF fml) ^ " {\n") ^ 
@@ -177,7 +137,7 @@ let string_of_fun_declNF = function
     tabs 1 "}" ^ (string_of_nexts nl)                
   | ProcNF(f,a,fml,vdl,c,nl) -> 
     "\n" ^ tabs 1 ("function " ^ f ^ "(" ^ (string_of_args a) ^ ")" ^ (string_of_fmodsNF fml) ^ " {\n") ^ 
-    (string_of_var_decls vdl) ^
+    (string_of_var_declsNF 1 vdl) ^
     (if c=[] then "" else (string_of_cmdNF 2 c) ^ "\n") ^
     tabs 1 "}" ^ (string_of_nexts nl)
 
@@ -185,7 +145,8 @@ let string_of_fun_declsNF = List.fold_left
   (fun s f -> s ^ (if s<>"" then "\n" else "") ^ (string_of_fun_declNF f)) ""
  
 let string_of_contractNF = function ContractNF(c,vdl,fdl) -> 
-  "contract " ^ c ^ " { " ^ (string_of_var_decls vdl) ^ (string_of_fun_declsNF fdl) ^ "\n}"
+  "contract " ^ c ^ " {\n" ^ (string_of_var_declsNF 0 vdl) ^ (string_of_fun_declsNF fdl) ^ "\n}"
+
 
 (******************************************************************************)
 (*                        Pretty-printing ILLUM clauses                       *)
@@ -251,6 +212,7 @@ let string_of_clause (c:clause) =
 (*                        Pretty-printing HeLLUM semantics                    *)
 (******************************************************************************)
 
+(*
 open Sem_hellum
 
 let string_of_env1 s x = match topenv s x with
@@ -294,3 +256,4 @@ let rec string_of_trace vars = function
   | [x] -> (string_of_conf vars x)
   | x::l -> (string_of_conf vars x) ^ "\n -> " ^ string_of_trace vars l
 
+*)

@@ -30,16 +30,21 @@ let fmodsNF_of_fmods fml =
   inputs = List.fold_left (fun l m -> match m with InputFMod(e,t) -> (e,t)::l | _ -> l) [] fml';
 }
 
+let rec var_declsNF_of_var_decls = function
+| EmptyVarDecls -> []
+| VarDeclSeq(VarDecl(t,x),vl') -> (x,TBase t)::(var_declsNF_of_var_decls vl') 
+| VarDeclSeq(MapDecl(t1,t2,x),vl') -> (x,TMap(t1,t2))::(var_declsNF_of_var_decls vl')
+
 let fun_declNF_of_fun_decl = function
   | Constr(xl,fml,c,nl) -> ConstrNF(xl,fmodsNF_of_fmods fml,cmdNF_of_cmd c,nl)
-  | Proc(f,xl,fml,vdl,c,nl) -> ProcNF(f,xl,fmodsNF_of_fmods fml,vdl,cmdNF_of_cmd c,nl)
+  | Proc(f,xl,fml,vdl,c,nl) -> ProcNF(f,xl,fmodsNF_of_fmods fml,var_declsNF_of_var_decls vdl,cmdNF_of_cmd c,nl)
 
 let rec fun_declsNF_of_fun_decls = function
   | EmptyFunDecls -> []
   | FunDeclSeq(f,fl) -> (fun_declNF_of_fun_decl f)::(fun_declsNF_of_fun_decls fl)
 
 let nf0 = function
-  | Contract(x,vl,fdl) -> ContractNF(x,vl,fun_declsNF_of_fun_decls fdl)
+  | Contract(x,vdl,fdl) -> ContractNF(x,var_declsNF_of_var_decls vdl,fun_declsNF_of_fun_decls fdl)
 
 
 (******************************************************************************)
@@ -238,7 +243,7 @@ let nf2_fun xl = function
   | ProcNF(f,al,fml,vdl,c,nl) -> ProcNF(f,al,fml,vdl,nf2_cmd xl (toks_of_cmd c) (List.map snd al) c,nl)
 
 let nf2 = function ContractNF(x,vl,fdl) -> 
-  ContractNF(x,vl,List.map (fun f -> nf2_fun (vars_of_var_decls vl) f) fdl)
+  ContractNF(x,vl,List.map (fun f -> nf2_fun (List.map fst vl) f) fdl)
 
 (******************************************************************************)
 (*                              NF3: move transfers up                        *)

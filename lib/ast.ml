@@ -41,6 +41,7 @@ type cmd =
   | Req of expr             
 
 and btype = TInt | TUint | TAddr | TString | TBool
+and hlltype = TBase of btype | TMap of btype * btype
 
 and arg = btype * ide
 
@@ -86,11 +87,13 @@ type fmodsNF = {
   inputs: (expr * tok) list 
 }
 
+type var_declsNF = (ide * hlltype) list
+
 type fun_declNF =
   | ConstrNF of args * fmodsNF * cmdNF * (ide list)
-  | ProcNF of ide * args * fmodsNF * var_decls * cmdNF * (ide list)           
+  | ProcNF of ide * args * fmodsNF * var_declsNF * cmdNF * (ide list)           
 
-type contractNF = ContractNF of ide * var_decls * (fun_declNF list)
+type contractNF = ContractNF of ide * var_declsNF * (fun_declNF list)
 
 
 (******************************************************************************)
