@@ -1,31 +1,22 @@
-// Test NF1: bug?
+// Test NF1: nested if-else
 
 contract Test11 {
     int n; 
     int m;
-
-    constructor() { }
-    
-    function add(int i, string op) { 
-        if (op=="plus") {
-            n=n+i; 
+  
+    function f() { 
+        if (n==0) {
             m=0;
         }
         else { 
-            if (m==0 && !(n>0 || n<=5)) {
-                n=0;
+            if (n==1) {
                 m=1; 
             }
-            else
-                n=n-i;
-            
-            if (n>0)
-                n=n-i; 
-            m=m+1;
+            else {
+                if (n==2) {
+                    m=2;
+                }
+            }
         } 
-    }
-    function withdraw(address a, int amount) {
-        require(amount > 0);
-        a.transfer(amount:T);
     }
 }

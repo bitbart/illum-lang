@@ -4,7 +4,7 @@ contract Test1 {
     int n; 
     int m;
   
-    function f(address a) auth(a) auth(b) after(1) after(2) input(2:T) input(1:T) { 
+    function f(address a) after(1) after(2) input(2:T) input(1:T) { 
         a.transfer(1:T);
         if (balance(T) == 0)
             n = balance(T);

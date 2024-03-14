@@ -1,0 +1,16 @@
+// Test NF1: bug
+
+contract Test14 {
+    int n; 
+  
+    function f(int i) { 
+        if (i==0)
+            n=0; 
+        else { 
+            if (i==1)
+                n=1;
+            if (i==2)
+                n=2;
+        } 
+    }
+}

@@ -1,0 +1,12 @@
+// Test NF1: bug (uncomment la last 2 lines)
+
+contract Test13 {
+    int n; 
+  
+    function f(int i) { 
+        if (i==1)
+            n=1;
+        if (i==2)
+            n=2;
+    }
+}

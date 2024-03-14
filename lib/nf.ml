@@ -70,15 +70,15 @@ let is_nf1 = function
   ContractNF(_,_,fdl) -> List.for_all is_nf1_fun fdl
 
 let nf1_push_assign_if = function
-| (VarAssignNF(x,e), IfNF bl) -> IfNF(List.map (fun (ei,ci) -> (subst_var x e ei,VarAssignNF(x,e)::ci)) bl)
+| (VarAssignNF(x,e), IfNF bl) -> IfNF(List.map (fun (ei,ci) -> (simplify_expr (subst_var x e ei),VarAssignNF(x,e)::ci)) bl)
 | _ -> failwith "nf1_push_assign_if"
 
 let nf1_push_send_if = function
-| (XferNF(x,e,t), IfNF(bl)) -> IfNF(List.map (fun (ei,ci) -> (subst_bal t (Sub(Bal(t),e)) ei,XferNF(x,e,t)::ci)) bl)
+| (XferNF(x,e,t), IfNF bl) -> IfNF(List.map (fun (ei,ci) -> (simplify_expr (subst_bal t (Sub(Bal(t),e)) ei),XferNF(x,e,t)::ci)) bl)
 | _ -> failwith "nf1_push_assign_if"
 
 let nf1_push_if_cmd = function
-| (IfNF(bl),c) -> IfNF(List.map (fun (ei,ci) -> (ei,ci@[c])) bl)
+| (IfNF bl,c) -> IfNF(List.map (fun (ei,ci) -> (ei,ci@[c])) bl)
 | _ -> failwith "nf1_push_if_cmd"
 
 let nf1_pull_assign_req = function
@@ -103,6 +103,10 @@ let bexpr_of_if_req bl = List.fold_left
   bl
   |> fst
 
+let nf1_has_req = List.fold_left 
+  (fun b (_,ci) -> match ci with ReqNF(_)::_ -> true | _ -> b)
+  false
+
 let nf1_drop_if_req = List.map 
   (fun (ei,ci) -> (ei, match ci with 
   | ReqNF(_)::cl -> cl
@@ -113,16 +117,19 @@ let rec nf1_cmd = function
 | [IfNF bl] -> bl 
   |> List.map (fun (ei,ci) -> (ei,nf1_cmd ci)) 
   |> List.map (fun (ei,ci) -> match ci with 
-    | [IfNF bl'] -> List.map (fun (ei',ci') -> (And(ei,ei'),ci')) bl'
+    | [IfNF bl'] -> List.map (fun (ei',ci') -> (simplify_expr (And(ei,ei')),ci')) bl'
     | _ -> [(ei,ci)])
   |> List.flatten
-  |> fun bl1 -> [ ReqNF ( simplify_expr (bexpr_of_if_req bl1)) ; IfNF (nf1_drop_if_req bl1) ]
-| VarAssignNF(x,e)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_assign_if (VarAssignNF(x,e), IfNF bl))::cl)
+  |> fun bl1 -> 
+    if nf1_has_req bl1 
+    then [ ReqNF (simplify_expr (bexpr_of_if_req bl1)) ; IfNF (nf1_drop_if_req bl1) ]
+    else [ IfNF bl1 ]
+| VarAssignNF(x,e)::(IfNF bl)::cl -> nf1_cmd ((nf1_push_assign_if (VarAssignNF(x,e), IfNF bl))::cl)
 | VarAssignNF(x,e)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_assign_req (VarAssignNF(x,e), ReqNF(er)))@cl)
 | XferNF(x,e,t)::ReqNF(er)::cl -> nf1_cmd ((nf1_pull_send_req (XferNF(x,e,t), ReqNF(er)))@cl)
 | ReqNF(e1)::ReqNF(e2)::cl -> nf1_cmd (ReqNF(And(e1,e2))::cl)
 | XferNF(x,e,t)::IfNF(bl)::cl -> nf1_cmd ((nf1_push_send_if (XferNF(x,e,t), IfNF(bl)))::cl)
-| IfNF(bl)::c::cl -> nf1_cmd ((nf1_push_if_cmd (IfNF(bl),c))::cl)
+| (IfNF bl)::c::cl -> nf1_cmd ((nf1_push_if_cmd (IfNF bl,c))::cl) (* FIXME: require in test/nf1/test13.hll *)
 | c::cl -> nf1_cmd (c::nf1_cmd cl)
 | _ -> failwith "nf1_cmd: should never happen"
 
