@@ -1,0 +1,17 @@
+// Test NF1: local variables
+
+contract Test12 {
+    int x;
+
+    constructor() {
+        int j;
+        j = 42;
+        x += j;
+    }
+
+    function f() {
+        int i;
+        x += i;
+        require(x>5);
+    }
+}

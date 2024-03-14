@@ -3,6 +3,6 @@ contract Test5 {
     address c; 
 
     function f(bool b) {
-        a = b && (a < a+1);
+        a = b && (a < a+1); // assign bool to int variable
     } next(f)
 }

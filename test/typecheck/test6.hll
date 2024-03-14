@@ -1,0 +1,11 @@
+contract Test6 {
+    int a;
+
+    constructor() {
+        a = 0;
+    }
+
+    constructor() { // double constructor
+        a = 1;
+    }
+}

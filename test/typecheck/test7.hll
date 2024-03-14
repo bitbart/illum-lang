@@ -1,0 +1,15 @@
+contract Test7 {
+    int a;
+
+    function f() {
+        a = 0;
+    }
+
+    function g() {
+        a = 2;
+    }
+
+    function f() { // double function name
+        a = 1;
+    }
+}

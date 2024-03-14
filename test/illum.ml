@@ -36,6 +36,7 @@ let%test "nf1_test8" = test_nf1 "nf1/test8.hll"
 let%test "nf1_test9" = test_nf1 "nf1/test9.hll"
 let%test "nf1_test10" = test_nf1 "nf1/test10.hll"
 (* let%test "nf1_test11" = test_nf1 "nf1/test11.hll" *)
+let%test "nf1_test12" = test_nf1 "nf1/test12.hll"
 
 (******************************************************************************)
 (*                                       NF2                                  *)
@@ -95,6 +96,8 @@ let%test "typecheck_test2" = test_typecheck false "typecheck/test2.hll"
 let%test "typecheck_test3" = test_typecheck false "typecheck/test3.hll"
 let%test "typecheck_test4" = test_typecheck false "typecheck/test4.hll"
 let%test "typecheck_test5" = test_typecheck false "typecheck/test5.hll"
+let%test "typecheck_test6" = test_typecheck false "typecheck/test6.hll"
+let%test "typecheck_test7" = test_typecheck false "typecheck/test7.hll"
 
 (******************************************************************************)
 (*                                       HLLC                                 *)
