@@ -12,6 +12,16 @@ let rec tabs (t:int) (s:string) = if t=0 then s else tabs (t-1) ("  " ^ s)
 
 let addparen s d = if d>0 then "(" ^ s ^ ")" else s
 
+let is_simple = function 
+| Not _ -> true 
+| Eq(e1,e2)
+| Neq(e1,e2)
+| Leq(e1,e2)
+| Le(e1,e2)
+| Geq(e1,e2)
+| Ge(e1,e2) -> depth_expr e1 = 0 && depth_expr e2 = 0
+| _ -> false
+
 let rec string_of_expr e = match e with
     True -> "true"
   | False -> "false"
@@ -40,7 +50,8 @@ let rec string_of_expr e = match e with
 
 and bool_binop e1 e2 op  = 
   let s1,s2 = string_of_expr e1,string_of_expr e2 in
-  addparen s1 (depth_expr e1) ^ " " ^ op ^ " " ^ addparen s2 (depth_expr e2)
+  (if is_simple e1 then s1 else addparen s1 (depth_expr e1)) ^ " " ^ op ^ " " ^ 
+  (if is_simple e2 then s2 else addparen s2 (depth_expr e2))
 
 and int_binop e1 e2 op = 
   let s1,s2 = string_of_expr e1,string_of_expr e2 in
