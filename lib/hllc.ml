@@ -34,7 +34,8 @@ let hllc_check_clause b =
   dpar = [];
   walp = [];
   prep = Var b;
-  cntr = [ (decs [] [] [], Send(["Null",IntConst 0,"T"])) ] 
+  cntr = [ (decs [] [] [], Send([])) ]
+  (* Send ["Null",IntConst 0,"T"] *) 
 }
 
 let rec rw_balances inl = function
@@ -52,17 +53,18 @@ let rec rw_balances inl = function
 | Le (e1,e2) -> Le (rw_balances inl e1, rw_balances inl e2)  
 | Geq(e1,e2) -> Geq(rw_balances inl e1, rw_balances inl e2) 
 | Ge (e1,e2) -> Ge (rw_balances inl e1, rw_balances inl e2)
-| Bal(_) -> failwith "rw_balances: Bal should never happen"
-| BalPre(t) -> (match List.assoc_opt t inl with Some e -> Add(Var (tokbal t),e) | None -> Var (tokbal t))
+| Bal(t) -> Var (tokbal t)
+| BalPre(t) -> Var (tokbal t)
+  (* (match List.assoc_opt t inl with Some e -> Add(Var (tokbal t),e) | None -> Var (tokbal t)) *)
 | IfE(e1,e2,e3) -> IfE(rw_balances inl e1, rw_balances inl e2, rw_balances inl e3)
 | MapUpd(e1,e2,e3) -> MapUpd(rw_balances inl e1, rw_balances inl e2, rw_balances inl e3)
 | c -> c
 
-let hllc_body_branch_pay cl = cl
+let hllc_body_branch_pay inputs cl = cl
 (* construct list of parameters for Pay calls *)
 |> List.fold_left (fun d c -> match c with XferNF(x,e,t) -> [Var x;e;Var t]::d | _ -> d) []
 (* construct Pay calls *)
-|> List.map (fun args -> ("Pay",args))
+|> List.map (fun args -> ("Pay",List.map (rw_balances (List.map (fun (e,t) -> (t,simplify_expr e)) inputs)) args))
 
 let hllc_body_branch_post f inputs cl = 
   cl 
@@ -71,14 +73,14 @@ let hllc_body_branch_post f inputs cl =
   | [ SimAssign al ] ->
     al 
     |> List.map snd
-    |> List.map (rw_balances (List.map (fun (e,t) -> (t,e)) inputs))
+    |> List.map (rw_balances (List.map (fun (e,t) -> (t,simplify_expr e)) inputs))
     |> fun l -> (snd (clause_names f),l) 
   | _ -> failwith "hllc_body_branch_post: cannot happen"
 
 let hllc_body_branch_check b = if b=True then [] else ["Check",[b]]
 
 let hllc_body_branch f b inputs cl = 
-  let pays = hllc_body_branch_pay cl in
+  let pays = hllc_body_branch_pay inputs cl in
   let post = hllc_body_branch_post f inputs cl in
   let chck = hllc_body_branch_check b in
   [ Call (chck @ pays @ [post]) ]
@@ -98,7 +100,7 @@ let funding_pre (tl:tok list) (inputs:(expr * tok) list) : (expr * tok) list =
   let rev_inputs = List.map (fun (e,t) -> (t,e)) inputs in
   tl 
   |> List.map (fun t -> (Var (tokbal t),t))
-  |> List.map (fun (e,t) -> match List.assoc_opt t rev_inputs with Some e' -> (Add(e,e'),t) | None -> (e,t))
+  |> List.map (fun (e,t) -> match List.assoc_opt t rev_inputs with Some e' -> (Add(e,rw_balances inputs e'),t) | None -> (e,t))
  
 let hllc_body f al fml xl tl cl = 
   let (b,cl') = match cl with 
@@ -128,7 +130,7 @@ let hllc_post f xl tl nl fdl =
   name = snd (clause_names f);
   spar = xl @ (tokvars tl);
   dpar = [];
-  walp = [];
+  walp = List.map (fun t -> (Var (tokbal t),t)) tl;
   prep = True;
   cntr =
   List.filter (fun fd -> match fd with ProcNF(g,_,_,_,_,_) -> List.mem g nl | _ -> false) fdl
@@ -147,10 +149,11 @@ let fix_next f_univ = function
 | ConstrNF(a,fml,vdl,cl,nl) -> ConstrNF(a,fml,vdl,cl,complete_next f_univ nl)
 | ProcNF(f,al,fml,vdl,cl,nl) -> ProcNF(f,al,fml,vdl,cl,complete_next f_univ nl)
 
-let hllc_nf = function ContractNF(_,vl,fdl) ->
+let hllc_nf = function ContractNF(cname,vl,fdl) ->
   let f_univ = List.fold_left (fun fl fd -> match fd with ProcNF(f,_,_,_,_,_) -> f::fl | _ -> fl) [] fdl in 
   let fdl' = List.map (fix_next f_univ) fdl in 
-  List.flatten (List.map (fun fd -> hllc_fun (List.map fst vl) (toks_of_fun_decls fdl') fdl' fd) fdl')
+  let tl = toks_of_contract (ContractNF(cname,vl,fdl)) in
+  List.flatten (List.map (fun fd -> hllc_fun (List.map fst vl) tl fdl' fd) fdl')
    @ [ hllc_pay_clause "a" "v" "t"; hllc_check_clause "b" ]
 
 let hllc (c:contract) : clause list =

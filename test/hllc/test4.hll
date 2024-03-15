@@ -3,8 +3,8 @@
 contract Test4 {
    function f(address a, int y) auth(a) after(5) input(1:T) {
         if (y > 5) {
-            a.transfer(x:T);
-            require balance(T) > 5;
+            a.transfer(2:T);
+            require balance(T) > 3;
         } else
             x = 10;
     } next(f)

@@ -32,7 +32,8 @@ let rec simplify_expr = function
   | IntConst n1,IntConst n2 -> IntConst (n1+n2)
   | e1',e2' -> Add(e1',e2'))
 | Sub(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
-  | IntConst n1,IntConst n2 -> IntConst (n1-n2)
+  | (e1',e2') when e1'=e2' -> IntConst 0
+  | (e1',Sub(e1'',e2')) when e1'=e1'' -> e2'
   | e1',e2' -> Sub(e1',e2'))
 | Mul(e1,e2) -> (match simplify_expr e1, simplify_expr e2 with
   | IntConst n1,IntConst n2 -> IntConst (n1*n2)

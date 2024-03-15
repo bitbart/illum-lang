@@ -3,12 +3,12 @@
 contract Test2 {
     int x; 
   
-    function f(address a, int y) input(1:T) {
+    function f(address a, int y) input(1+y:T) {
         x = x + y;
         a.transfer(x:T);
     } next(g,h)
 
-    function g(address a) after(4) {
+    function g(address a) input(x:T) after(4+x) {
         x = 42;
     } next(g)
 

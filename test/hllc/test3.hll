@@ -2,18 +2,17 @@
 
 contract Test3 {
     int x; 
-  
-     function f(address a, int y) input(1:T0) {
-        // FIXME: T0 is not properly recorded in state
+ 
+    function f(address a, int y) input(1:T0) input(2:T1) {
         x = x + y;
         a.transfer(x:T1);
     } next(g,h)
 
-    function g(address a) after(4) {
+    function g(address a) after(4) input(3:T1) input(4:T0) {
         x = 42;
     }
 
-    function h(address b) after(5) {
+    function h(address b) after(5) input(5:T2) {
         x = 51;
     }
 }

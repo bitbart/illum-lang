@@ -185,12 +185,59 @@ and ssa_toks tl = List.fold_right (fun x tl' -> ("bal_" ^ x ^ "_0")::tl') tl []
 (* ssa_inc st x increases the index of the SSA variable x in SSA state st *)
 let ssa_inc st x = fun y -> if x=y then st x + 1 else st y
 
-let simassign_init xl tl zl =
+let rec rw_bal_in_balpre = function
+| Bal(t)     -> BalPre(t)
+| Map(e1,e2) -> Map(rw_bal_in_balpre e1, rw_bal_in_balpre e2)
+| Not e ->      Not(rw_bal_in_balpre e) 
+| And(e1,e2) -> And(rw_bal_in_balpre e1, rw_bal_in_balpre e2)
+| Or (e1,e2) -> Or (rw_bal_in_balpre e1, rw_bal_in_balpre e2) 
+| Add(e1,e2) -> Add(rw_bal_in_balpre e1, rw_bal_in_balpre e2)
+| Sub(e1,e2) -> Sub(rw_bal_in_balpre e1, rw_bal_in_balpre e2)
+| Mul(e1,e2) -> Mul(rw_bal_in_balpre e1, rw_bal_in_balpre e2)
+| Div(e1,e2) -> Div(rw_bal_in_balpre e1, rw_bal_in_balpre e2)
+| Eq (e1,e2) -> Eq (rw_bal_in_balpre e1, rw_bal_in_balpre e2)
+| Neq(e1,e2) -> Neq(rw_bal_in_balpre e1, rw_bal_in_balpre e2)
+| Leq(e1,e2) -> Leq(rw_bal_in_balpre e1, rw_bal_in_balpre e2)
+| Le (e1,e2) -> Le (rw_bal_in_balpre e1, rw_bal_in_balpre e2)  
+| Geq(e1,e2) -> Geq(rw_bal_in_balpre e1, rw_bal_in_balpre e2) 
+| Ge (e1,e2) -> Ge (rw_bal_in_balpre e1, rw_bal_in_balpre e2)
+| IfE(e1,e2,e3) ->    IfE   (rw_bal_in_balpre e1, rw_bal_in_balpre e2, rw_bal_in_balpre e3)
+| MapUpd(e1,e2,e3) -> MapUpd(rw_bal_in_balpre e1, rw_bal_in_balpre e2, rw_bal_in_balpre e3)
+| e -> e
+
+let add_inputs t inl = 
+  let inl' = List.map (fun (e',t') -> (t',e')) inl in
+  match List.assoc_opt t inl' with Some e -> let e' = rw_bal_in_balpre e in Add(BalPre(t),e') | None -> BalPre(t)
+
+let rec add_inputs_req inl = function
+| Bal(t)     ->  
+  List.map (fun (e',t') -> (t',e')) inl
+  |> fun inl' -> (match List.assoc_opt t inl' with Some e -> Add(BalPre(t),e) | None -> BalPre(t))
+| Map(e1,e2) -> Map(add_inputs_req inl e1, rw_bal_in_balpre e2)
+| Not e ->      Not(add_inputs_req inl e) 
+| And(e1,e2) -> And(add_inputs_req inl e1, add_inputs_req inl e2)
+| Or (e1,e2) -> Or (add_inputs_req inl e1, add_inputs_req inl e2) 
+| Add(e1,e2) -> Add(add_inputs_req inl e1, add_inputs_req inl e2)
+| Sub(e1,e2) -> Sub(add_inputs_req inl e1, add_inputs_req inl e2)
+| Mul(e1,e2) -> Mul(add_inputs_req inl e1, add_inputs_req inl e2)
+| Div(e1,e2) -> Div(add_inputs_req inl e1, add_inputs_req inl e2)
+| Eq (e1,e2) -> Eq (add_inputs_req inl e1, add_inputs_req inl e2)
+| Neq(e1,e2) -> Neq(add_inputs_req inl e1, add_inputs_req inl e2)
+| Leq(e1,e2) -> Leq(add_inputs_req inl e1, add_inputs_req inl e2)
+| Le (e1,e2) -> Le (add_inputs_req inl e1, add_inputs_req inl e2)  
+| Geq(e1,e2) -> Geq(add_inputs_req inl e1, add_inputs_req inl e2) 
+| Ge (e1,e2) -> Ge (add_inputs_req inl e1, add_inputs_req inl e2)
+| IfE(e1,e2,e3) ->    IfE   (add_inputs_req inl e1, add_inputs_req inl e2, add_inputs_req inl e3)
+| MapUpd(e1,e2,e3) -> MapUpd(add_inputs_req inl e1, add_inputs_req inl e2, add_inputs_req inl e3)
+| e -> e
+
+
+let simassign_init xl tl zl ins =
   let zl' = diff zl xl in 
   let xl0,tl0,zl0 = (ssa_vars xl,ssa_toks tl,ssa_vars zl') in
   SimAssign(
     (List.map2 (fun y x -> (y,Var x)) (xl0 @ zl0) (xl @ zl')) @
-    (List.map2 (fun y x -> (y,BalPre x)) tl0 tl)
+    (List.map2 (fun y x -> (y,add_inputs x ins)) tl0 tl)
   )
 
 let simassign_end xl tl st =
@@ -199,58 +246,62 @@ let simassign_end xl tl st =
     (List.map (fun t -> (ssa_tok_fin t,Var (ssa_tok st t))) tl)
   )
 
-let ssa_rw_expr st e =  
+let ssa_rw_expr st tl e =  
   (* (List.fold_left (fun _ s -> print_endline s) () xl); *)
-  let (xl,tl) = (vars_of_expr e, toks_of_expr e) in
+  let xl = vars_of_expr e in
   (* replaces the variables in e with SSA variables *)
   let e1 = List.fold_left (fun e' x -> subst_var x (Var (ssa_var st x)) e') e xl in
   (* replaces the balance(T) subexpr in e with SSA variables *)
   List.fold_left (fun e' t -> subst_bal t (Var (ssa_tok st t)) e') e1 tl
 
-let ssa_rw_cmd1 st = function
-| VarAssignNF(x,e) -> let st' = ssa_inc st x in ([SimAssign [ssa_var st' x, ssa_rw_expr st e]], st')
+let ssa_rw_cmd1 st tl = function
+| VarAssignNF(x,e) -> let st' = ssa_inc st x in ([SimAssign [ssa_var st' x, ssa_rw_expr st tl e]], st')
 | XferNF(x,e,t) -> let st' = ssa_inc st t in 
   let e' = Sub(Bal(t),e) in
   (
     [
-    XferNF(ssa_var st x,ssa_rw_expr st e,t); (* check x *)
-    SimAssign([ssa_tok st' t, ssa_rw_expr st e'])
+    XferNF(ssa_var st x,ssa_rw_expr st tl e,t); (* check x *)
+    SimAssign([ssa_tok st' t, ssa_rw_expr st tl e'])
     ], 
     st'
   )
 | _ -> failwith "ssa_rw_cmd1: should not happen"
 
-let nf2_cmd1_list cl =
+let nf2_cmd1_list tl cl =
   let st0 = fun _ -> 0 in 
-  List.fold_left (fun (l,st) c -> let (cl',st') = ssa_rw_cmd1 st c in (l@cl', st')) ([],st0) cl
+  List.fold_left (fun (l,st) c -> let (cl',st') = ssa_rw_cmd1 st tl c in (l@cl', st')) ([],st0) cl
   
-let nf2_if xl tl zl bl =
-  let c_init = simassign_init xl tl zl in
+let nf2_if xl tl zl inl bl =
+  let c_init = simassign_init xl tl zl inl in
   bl 
-  |> List.map (fun (ei,ci) -> (ei,nf2_cmd1_list ci))
+  |> List.map (fun (ei,ci) -> (ei,nf2_cmd1_list tl ci))
   |> fun y -> [ IfNF (List.map (fun (ei,(ci,sti)) -> (ei,(c_init::ci)@[simassign_end xl tl sti])) y) ]
 
-let nf2_cmd xl tl zl = function
+let nf2_cmd xl tl zl inl = function
 | [] -> []
-| [(ReqNF er); IfNF bl] -> (ReqNF er)::nf2_if xl tl zl bl
-| [IfNF bl] -> nf2_if xl tl zl bl 
+| [(ReqNF er); IfNF bl] ->
+    let er' = simplify_expr (add_inputs_req inl er) in 
+    (ReqNF er')::(nf2_if xl tl zl inl bl) 
+| [IfNF bl] -> nf2_if xl tl zl inl bl 
 | (ReqNF er)::cl -> 
-    let c_init = simassign_init xl tl zl in
-    let (cl',st') = nf2_cmd1_list cl in
+    let c_init = simassign_init xl tl zl inl in
+    let (cl',st') = nf2_cmd1_list tl cl in
     let c_end = simassign_end xl tl st' in
-    ((ReqNF er)::c_init::cl')@[c_end]
+    let er' = simplify_expr (add_inputs_req inl er) in
+    (ReqNF er')::(c_init::cl')@[c_end]
 | cl -> 
-    let c_init = simassign_init xl tl zl in
-    let (cl',st') = nf2_cmd1_list cl in
+    let c_init = simassign_init xl tl zl inl in
+    let (cl',st') = nf2_cmd1_list tl cl in
     let c_end = simassign_end xl tl st' in
     (c_init::cl')@[c_end]
 
-let nf2_fun xl = function
-  | ConstrNF(al,fml,vdl,c,nl) -> ConstrNF(al,fml,vdl,nf2_cmd xl (toks_of_cmd c) (List.map snd al) c,nl) 
-  | ProcNF(f,al,fml,vdl,c,nl) -> ProcNF(f,al,fml,vdl,nf2_cmd xl (toks_of_cmd c) (List.map snd al) c,nl)
+let nf2_fun xl tl = function
+  | ConstrNF(al,fml,vdl,c,nl) -> ConstrNF(al,fml,vdl,nf2_cmd xl tl (List.map snd al) fml.inputs c,nl) 
+  | ProcNF(f,al,fml,vdl,c,nl) -> ProcNF(f,al,fml,vdl,nf2_cmd xl tl (List.map snd al) fml.inputs c,nl)
 
 let nf2 = function ContractNF(x,vl,fdl) -> 
-  ContractNF(x,vl,List.map (fun f -> nf2_fun (List.map fst vl) f) fdl)
+  let tl = toks_of_contract (ContractNF(x,vl,fdl)) in
+  ContractNF(x,vl,List.map (fun f -> nf2_fun (List.map fst vl) tl f) fdl)
 
 (******************************************************************************)
 (*                              NF3: move transfers up                        *)

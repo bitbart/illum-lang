@@ -155,12 +155,12 @@ let rec toks_of_cmd1 = function
 and toks_of_cmd cl = List.fold_left (fun tl c -> union tl (toks_of_cmd1 c)) [] cl
 
 let toks_of_fun = function
-  | ConstrNF(_,_,_,c,_) 
-  | ProcNF(_,_,_,_,c,_) -> toks_of_cmd c
+  | ConstrNF(_,fml,_,c,_) 
+  | ProcNF(_,_,fml,_,c,_) -> union (List.fold_left (fun tl (_,t) -> union tl [t]) [] fml.inputs) (toks_of_cmd c)
 
 let toks_of_fun_decls = List.fold_left (fun tl f -> union tl (toks_of_fun f)) []
 
-let toks_of_contract = function ContractNF(_,_,fdl) -> toks_of_fun_decls fdl
+let toks_of_contract = function ContractNF(_,_,fdl) -> List.sort compare (toks_of_fun_decls fdl)
 
 (******************************************************************************)
 (*                      Substitute variable in expression                     *)

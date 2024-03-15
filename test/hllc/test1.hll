@@ -1,9 +1,9 @@
 // Test HLLC: 1 assignment, 2 tranfers
 
-contract Test0 {
+contract Test1 {
     int x; 
   
-    function f(address a, address b) input(2:T0) {
+    function f(address a, address b) input(2:T) {
         x = balance(T)/2;
         a.transfer(x:T);
         a.transfer(balance(T):T);
