@@ -131,13 +131,18 @@ let typecheck_fun f_univ env = function
     |> fail_if_false (no_dup (List.map snd a)) ("Duplicate arguments in function ")
     |> fun _ -> typecheck_fun_gen f_univ env (f,a,fml,vdl,cl,nl)
 
+let typecheck_dup_inputs fdl = fdl 
+  |> List.map (fun fd -> match fd with ConstrNF(_,fml,_,_,_) -> fml.inputs | ProcNF(_,_,fml,_,_,_) -> fml.inputs)
+  |> List.fold_left (fun t_opt inl -> match find_dup (List.map snd inl) with None -> t_opt | Some x -> Some x) None
+  |> fun t_opt -> match t_opt with None -> true | Some t -> failwith ("Multiply defined input of token " ^ t) 
+
 let typecheck_dup_constr fdl = fdl 
   |> List.filter (fun fd -> match fd with ConstrNF(_,_,_,_,_) -> true | _ -> false)
-  |> fun l -> if List.length l > 1 then failwith "Multiple constructors" else true 
+  |> fun l -> if List.length l > 1 then failwith "Multiply defined constructor" else true 
   
 let rec typecheck_dup_fun = function
 | [] -> true
-| f::l -> if List.mem f l then failwith ("Function " ^ f ^ " defined twice") else typecheck_dup_fun l
+| f::l -> if List.mem f l then failwith ("Multiply defined function " ^ f) else typecheck_dup_fun l
 
 let typecheck c = match c with ContractNF(_,vl,fdl) -> 
   let f_univ = List.fold_left (fun fl fd -> match fd with ProcNF(f,_,_,_,_,_) -> f::fl | _ -> fl) [] fdl in
@@ -145,6 +150,7 @@ let typecheck c = match c with ContractNF(_,vl,fdl) ->
   c
   |> fun _ -> typecheck_dup_fun f_univ
   |> fun _ -> typecheck_dup_constr fdl
+  |> fun _ -> typecheck_dup_inputs fdl
   |> fail_if_false (no_dup (List.map fst vl)) "Duplicate global variables" 
   |> fun _ -> List.for_all (typecheck_fun f_univ env) fdl
   |> fun _ ->  c

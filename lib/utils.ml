@@ -25,6 +25,10 @@ let rec no_dup = function
 | [] -> true
 | x::l -> if List.mem x l then false else no_dup l
 
+let rec find_dup = function
+| [] -> None
+| x::l -> if List.mem x l then Some x else find_dup l
+
 let rec last = function
     [] -> failwith "last on empty list"
   | [x] -> x
