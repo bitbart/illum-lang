@@ -1,0 +1,11 @@
+contract Test5 {
+    int x;
+    address a;
+    address b;
+
+    function f(int y) input(x+y+balance(T):T) {
+        a.transfer(x:T);
+        a = b;
+    }
+    
+}

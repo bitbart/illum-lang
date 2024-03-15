@@ -1,0 +1,7 @@
+contract Test8 {
+    int a;
+
+    function f() input(1:T) input(2:T) { // double token input
+        a = 1;
+    }
+}

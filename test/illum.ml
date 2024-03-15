@@ -100,6 +100,7 @@ let%test "typecheck_test4" = test_typecheck false "typecheck/test4.hll"
 let%test "typecheck_test5" = test_typecheck false "typecheck/test5.hll"
 let%test "typecheck_test6" = test_typecheck false "typecheck/test6.hll"
 let%test "typecheck_test7" = test_typecheck false "typecheck/test7.hll"
+let%test "typecheck_test8" = test_typecheck false "typecheck/test8.hll"
 
 (******************************************************************************)
 (*                                       HLLC                                 *)
@@ -111,3 +112,7 @@ let test_hllc fname = match read_file fname with
 
 let%test "hllc_test0" = test_hllc "hllc/test0.hll"
 let%test "hllc_test1" = test_hllc "hllc/test1.hll"
+let%test "hllc_test2" = test_hllc "hllc/test2.hll"
+let%test "hllc_test3" = test_hllc "hllc/test3.hll"
+let%test "hllc_test4" = test_hllc "hllc/test4.hll"
+let%test "hllc_test5" = test_hllc "hllc/test5.hll"
