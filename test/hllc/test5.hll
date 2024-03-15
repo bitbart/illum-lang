@@ -7,5 +7,4 @@ contract Test5 {
         a.transfer(x:T);
         a = b;
     }
-    
 }

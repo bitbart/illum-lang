@@ -5,20 +5,20 @@ contract AMM  {
 	} 
 
     function addliq(uint x0, uint x1) input(x0:T0) input(x1:T1) { 
-   		require(balance(T0)+x0)*balance(T1) == balance(T0)*(balance(T1)+x1);
+   		require(balance(T0)*(balance(T1)-x1) == (balance(T0)-x0)*balance(T1));
    	}
 
-  	function swap0(uint x, address A, uint y) input(x:T0) {
-		uint tok;
-		tok = x*balance(T1)/(balance(T0)+x);
-        require(balance(T1) > tok && tok>=y);
-  		A.transfer(tok:T1);
+  	function swap0(uint x, address a, uint min_t1_out) input(x:T0) {
+		uint t1_out;
+		t1_out = x*balance(T1)/balance(T0);
+        require(balance(T1) > t1_out && t1_out>=min_t1_out);
+  		a.transfer(t1_out:T1);
   	}
 
-    function swap1(uint x, address A, uint y) input(x:T1) {
-		uint tok; 
-		tok = x*balance(T0)/(balance(T1)+x);
-        require(balance(T0) > tok && tok>=y);
-    	A.transfer(tok:T0);
+    function swap1(uint x, address a, uint min_t0_out) input(x:T1) {
+		uint t0_out; 
+		t0_out = x*balance(T0)/balance(T1);
+        require(balance(T0) > t0_out && t0_out>=min_t0_out);
+    	a.transfer(t0_out:T0);
   	}
 }

@@ -104,7 +104,7 @@ let funding_pre (tl:tok list) (inputs:(expr * tok) list) : (expr * tok) list =
  
 let hllc_body f al fml xl tl cl = 
   let (b,cl') = match cl with 
-  | ReqNF e::tl -> (e,tl)
+  | ReqNF e::tl -> (simplify_expr (rw_balances [] e),tl) (* CHECK! *)
   | _ -> (True,cl)
   in
 {
