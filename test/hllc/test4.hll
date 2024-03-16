@@ -1,7 +1,7 @@
 // Test hllc: 1 assignment, 1 tranfer, if-else
 
 contract Test4 {
-   function f(address a, int y) auth(a) after(5) input(1:T) {
+   function f(address a, int y) after(5) input(1:T) {
         if (y > 5) {
             a.transfer(2:T);
             require balance(T) > 3;

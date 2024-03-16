@@ -1,0 +1,9 @@
+contract Test9 {
+    uint x;
+
+    function f(address a) 
+        auth(a) // authorization of local variable  
+    {
+        x = x+1;
+    }
+}

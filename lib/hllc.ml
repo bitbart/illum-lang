@@ -61,6 +61,7 @@ let rec rw_balances inl = function
 | c -> c
 
 let hllc_body_branch_pay inputs cl = cl
+
 (* construct list of parameters for Pay calls *)
 |> List.fold_left (fun d c -> match c with XferNF(x,e,t) -> [Var x;e;Var t]::d | _ -> d) []
 (* construct Pay calls *)
@@ -73,16 +74,18 @@ let hllc_body_branch_post f inputs cl =
   | [ SimAssign al ] ->
     al 
     |> List.map snd
+    |> List.map simplify_expr
     |> List.map (rw_balances (List.map (fun (e,t) -> (t,simplify_expr e)) inputs))
     |> fun l -> (snd (clause_names f),l) 
   | _ -> failwith "hllc_body_branch_post: cannot happen"
 
-let hllc_body_branch_check b = if b=True then [] else ["Check",[b]]
+let hllc_body_branch_check b inputs = if b=True then [] else 
+  let b' = rw_balances (List.map (fun (e,t) -> (t,simplify_expr e)) inputs) b in ["Check",[b']]
 
 let hllc_body_branch f b inputs cl = 
   let pays = hllc_body_branch_pay inputs cl in
   let post = hllc_body_branch_post f inputs cl in
-  let chck = hllc_body_branch_check b in
+  let chck = hllc_body_branch_check b inputs  in
   [ Call (chck @ pays @ [post]) ]
 
 let hllc_body_cmd f inputs = function
@@ -119,7 +122,7 @@ let hllc_body f al fml xl tl cl =
 }
 
 let hllc_post_branch xl tl = function
- | ConstrNF(_,_,_,_,_) -> failwith "hllc_post_branch: constructor not implemented"  
+ | ConstrNF(_,_,_,_,_) -> failwith "hllc_post_branch: should never happen"  
  | ProcNF(g,_,fml,_,_,_) -> 
     let exl = List.map (fun x -> Var x) xl in
     let etl = List.map (fun t -> Var (tokbal t)) tl in

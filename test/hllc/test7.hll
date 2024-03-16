@@ -1,0 +1,17 @@
+// Test HLLC: 1 assignment, 1 tranfer, 0 next
+
+contract Test7 {
+    uint x; 
+  
+    function f(uint y, address a) {
+        x = balance(T) - y;
+        if (x > 10) {
+            a.transfer(x:T);
+            require balance(T) > 20;
+            x += 1;
+        }
+    } next(f,g)
+
+    function g() { skip; }
+
+}

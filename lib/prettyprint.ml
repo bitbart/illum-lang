@@ -181,7 +181,7 @@ let rec string_of_contrD = function
 | Call [(x,el)] -> "call " ^ string_of_call1 (x,el)
 | Call l -> 
   "call( " ^
-  (List.fold_left (fun s (x,el) -> s ^ (if s<>"" then " || " else "") ^ string_of_call1 (x,el)) "" l) ^ 
+  (List.fold_left (fun s (x,el) -> s ^ (if s<>"" then " | " else "") ^ string_of_call1 (x,el)) "" l) ^ 
   " )"
 | Send l -> "send(" ^ (List.fold_left (fun s (x,e,t) -> s ^ string_of_expr e ^ ":" ^ t ^ " -> " ^ x) "" l) ^ ")"
 

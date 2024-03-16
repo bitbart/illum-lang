@@ -101,6 +101,7 @@ let%test "typecheck_test5" = test_typecheck false "typecheck/test5.hll"
 let%test "typecheck_test6" = test_typecheck false "typecheck/test6.hll"
 let%test "typecheck_test7" = test_typecheck false "typecheck/test7.hll"
 let%test "typecheck_test8" = test_typecheck false "typecheck/test8.hll"
+let%test "typecheck_test9" = test_typecheck false "typecheck/test9.hll"
 
 (******************************************************************************)
 (*                                       HLLC                                 *)

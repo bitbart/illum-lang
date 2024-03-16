@@ -29,6 +29,10 @@ let rec find_dup = function
 | [] -> None
 | x::l -> if List.mem x l then Some x else find_dup l
 
+let rec find_notin l1 l2 = match l1 with
+| [] -> None
+| x::l -> if List.mem x l2 then find_notin l l2 else Some x
+
 let rec last = function
     [] -> failwith "last on empty list"
   | [x] -> x

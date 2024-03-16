@@ -4,26 +4,23 @@ contract Crowdfund {
     uint target;
     address owner;
 
-    constructor(uint d, uint t, address O) {
-        // funds = emptymap; 
-        owner = O;
+    constructor(uint d, uint t, address o) {
+        owner = o;
         deadline = d; 
         target = t;
     } next(deposit,finalize)
 
-    function deposit(uint x, address A) input(x:T) {
-       	funds[A] = funds[A] + x;
+    function deposit(uint x, address a) input(x:T) {
+       	funds[a] += x;
     } next(deposit,finalize)
 
     function finalize() after(deadline) {
-       	if (balance(T) >= target) {
+       	if (balance(T) >= target)
          	owner.transfer(balance(T):T);
-          	funds = emptymap;
-        }
     } next(withdraw)
 
-    function withdraw(address A) {
-       	A.transfer(funds[A]:T);
-       	funds[A] = 0;
+    function withdraw(address a) {
+       	a.transfer(funds[a]:T);
+       	funds[a] = 0;
     } next(withdraw)
 }

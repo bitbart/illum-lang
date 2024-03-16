@@ -47,6 +47,7 @@ rule read_token =
   | "skip" { SKIP }
   | "="  { TAKES }
   | "+=" { PLUSTAKES}
+  | "-=" { MINUSTAKES}
   | ";"  { CMDSEP }
   | "if" { IF }
   | "else" { ELSE }

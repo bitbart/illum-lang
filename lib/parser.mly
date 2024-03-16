@@ -8,7 +8,7 @@ open Ast
 %token AND
 %token OR
 %token PLUS PLUSTAKES
-%token MINUS
+%token MINUS MINUSTAKES
 %token MUL DIV
 %token EQ NEQ LEQ LE GEQ GE
 %token BALANCE
@@ -90,8 +90,10 @@ cmd1:
   | REQ; e = expr; CMDSEP; { Req(e) } 
   | x = ID; TAKES; e=expr; CMDSEP; { VarAssign(x,e) }
   | x = ID; PLUSTAKES; e=expr; CMDSEP; { VarAssign(x,Add(Var(x),e)) }
+  | x = ID; MINUSTAKES; e=expr; CMDSEP; { VarAssign(x,Sub(Var(x),e)) }
   | x = ID; LBRACKET; e1 = expr; RBRACKET; TAKES; e2=expr; CMDSEP; { VarAssign(x,MapUpd(Var x,e1,e2)) }
   | x = ID; LBRACKET; e1 = expr; RBRACKET; PLUSTAKES; e2=expr; CMDSEP; { VarAssign(x,MapUpd(Var x,e1,Add(Map(Var x,e1),e2))) }
+  | x = ID; LBRACKET; e1 = expr; RBRACKET; MINUSTAKES; e2=expr; CMDSEP; { VarAssign(x,MapUpd(Var x,e1,Sub(Map(Var x,e1),e2))) }
   | x = ID; SENDSEP; SEND; LPAREN; e=expr; TOKSEP; t = ID; RPAREN; CMDSEP; { Xfer(x,e,t) }
   | IF; LPAREN; e = expr; RPAREN; c1 = cmd1; { If(e,c1,Skip) }
   | IF; LPAREN; e = expr; RPAREN; LBRACE; c1 = cmd; RBRACE; { If(e,c1,Skip) }

@@ -1,0 +1,23 @@
+contract Test6 {
+    int x;
+
+    function f(address a, int y) auth(a) {
+        a.transfer(x:T);
+        a = b;
+    }
+}
+
+/*
+clause f(x,bal_T; a,y,s) {              
+  wallet: bal_T:T
+  require: versig(a,s)
+  branch: 
+    call( ...)
+}
+clause Post-f(x,bal_T; ) {
+  wallet: bal_T:T
+  require: true
+  branch: 
+    call f(x,bal_T)
+}
+*/

@@ -1,0 +1,77 @@
+contract LendingPool {
+    uint Cmin;      // minimum collateralization
+    uint Rliq;      // liquidation bonus
+    uint Ir;        // interest rate
+    uint Imul;      // interest rate multiplier
+    uint D;         // total debt
+    uint M;         // total minted tokens
+    uint oracle;    // interest accrut oracle
+    mapping (address => uint) debt;
+    mapping (address => uint) mint;
+
+    constructor(uint c, uint r, uint m, address o) { 
+        require (r>1 && m>1);
+        Cmin = c;  
+        Rliq = r;  
+        Ir   = 1;   
+        Imul = m;  
+        D = 0;      
+        M = 0;
+        oracle = o;
+    }
+
+    /*
+    function X(n) view { // exchange rate 1:t = X() mint t
+        if (M==0) return 1 else return (n+D*Ir)/M
+    }
+
+    function C(a,n) view { // collateralization of a
+        return (mint[a]*X(n))/(debt[a]*Ir)
+    }
+    */
+
+    function deposit(address sender, uint x) input(x:T) { 
+        uint y;
+        // y = x/X(balance(T)-x); // received minted tokens
+        mint[sender]+=y; 
+        M+=y;
+    } 
+
+    function borrow(address sender, uint x) auth(sender) { 
+        require balance(T)>x;
+        sender.transfer(x:T); 
+        debt[sender]+=x/Ir; 
+        D+=x/Ir; 
+        // require C(sender,balance(T))>=Cmin;
+    } 
+
+    function accrue() auth(oracle) {
+        Ir=Ir*Imul;
+    }
+
+    function repay(address sender, uint x) input(x:T) {
+        require (debt[sender]*Ir>=x);
+        debt[sender] -= x/Ir; // CHECK
+    }
+   
+    function redeem(address sender, uint x) auth(sender) {
+        uint y; 
+        y = x*balance(T);
+        require (mint[sender]>=x && balance(T)>=y);
+        sender.transfer(y:T); 
+        mint[sender]-=x; 
+        M-=x;
+        // require C(sender,balance(T))>=Cmin;
+    }
+
+    function liquidate(address sender, uint x, address b) auth(sender) input(x:T) {
+        uint y;
+        // y = (x/X(balance(T)-x))*Rliq;
+        // require debt[b]*Ir>x && C(b,#t-x)<Cmin && mint[b]>=y;
+        mint[sender]+=y; 
+        mint[b]-=y; 
+        debt[b]-=x/Ir; 
+        D-=x/Ir;
+        // require C(b,balance(t))<=Cmin;
+    }
+}

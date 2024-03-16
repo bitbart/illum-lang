@@ -15,6 +15,10 @@ let rec simplify_expr1 = function
 | Not e -> (match simplify_expr1 e with
   | True -> False
   | False -> True
+  | Geq(e1,e2) -> Le(e1,e2)
+  | Ge(e1,e2) -> Leq(e1,e2)
+  | Leq(e1,e2) -> Ge(e1,e2)
+  | Le(e1,e2) -> Geq(e1,e2)
   | e' -> Not e')
 | And(e1,e2) -> (match simplify_expr1 e1, simplify_expr1 e2 with
   | True,e2' -> e2'

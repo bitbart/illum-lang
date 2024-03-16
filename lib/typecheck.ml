@@ -136,6 +136,13 @@ let typecheck_dup_inputs fdl = fdl
   |> List.fold_left (fun t_opt inl -> match find_dup (List.map snd inl) with None -> t_opt | Some x -> Some x) None
   |> fun t_opt -> match t_opt with None -> true | Some t -> failwith ("Multiply defined input of token " ^ t) 
 
+let typecheck_auths vl fdl =
+  let gvars = List.map fst vl in 
+  fdl 
+  |> List.map (fun fd -> match fd with ConstrNF(_,fml,_,_,_) -> fml.auths | ProcNF(_,_,fml,_,_,_) -> fml.auths)
+  |> List.fold_left (fun t_opt authl -> match find_notin authl gvars with None -> t_opt | Some x -> Some x) None
+  |> fun t_opt -> match t_opt with None -> true | Some t -> failwith ("Authorization of non-global variable " ^ t) 
+
 let typecheck_dup_constr fdl = fdl 
   |> List.filter (fun fd -> match fd with ConstrNF(_,_,_,_,_) -> true | _ -> false)
   |> fun l -> if List.length l > 1 then failwith "Multiply defined constructor" else true 
@@ -151,6 +158,7 @@ let typecheck c = match c with ContractNF(_,vl,fdl) ->
   |> fun _ -> typecheck_dup_fun f_univ
   |> fun _ -> typecheck_dup_constr fdl
   |> fun _ -> typecheck_dup_inputs fdl
+  |> fun _ -> typecheck_auths vl fdl
   |> fail_if_false (no_dup (List.map fst vl)) "Duplicate global variables" 
   |> fun _ -> List.for_all (typecheck_fun f_univ env) fdl
   |> fun _ ->  c
