@@ -72,6 +72,7 @@ let rec simplify_expr1 = function
   | False -> simplify_expr1 e3
   | e1' -> IfE(e1',simplify_expr1 e2,simplify_expr1 e3))
 | MapUpd(e1,e2,e3) -> MapUpd(simplify_expr1 e1,simplify_expr1 e2,simplify_expr1 e3)
+| VerSig(e1,e2) -> VerSig(simplify_expr1 e1,simplify_expr1 e2)
 
 let rec simplify_expr e = 
   let e' = simplify_expr1 e in

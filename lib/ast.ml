@@ -27,6 +27,7 @@ type expr =
   | IfE of expr * expr * expr         (* ternary operator *)
   | BalPre of tok                     (* balance of T before the call *)       
   | MapUpd of expr * expr * expr      (* e1[e2 -> e3] map update*)
+  | VerSig of expr * expr             (* verify signature *)
 
 (******************************************************************************)
 (*                                     HeLLUM AST                             *)

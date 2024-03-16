@@ -66,7 +66,8 @@ let rec depth_expr = function
   | Leq(e1,e2) 
   | Le (e1,e2)
   | Geq(e1,e2) 
-  | Ge (e1,e2) -> 1 + max (depth_expr e1) (depth_expr e2)
+  | Ge (e1,e2) 
+  | VerSig(e1,e2) -> 1 + max (depth_expr e1) (depth_expr e2)
   | Bal(_) 
   | BalPre(_) -> 0
   | IfE(e1,e2,e3)  
@@ -96,7 +97,8 @@ let rec vars_of_expr = function
   | Leq(e1,e2) 
   | Le(e1,e2)
   | Geq(e1,e2) 
-  | Ge(e1,e2) -> union (vars_of_expr e1) (vars_of_expr e2)
+  | Ge(e1,e2) 
+  | VerSig(e1,e2) -> union (vars_of_expr e1) (vars_of_expr e2)
   | Bal(_) 
   | BalPre(_) -> []
   | IfE(e1,e2,e3) -> union (vars_of_expr e1) (union (vars_of_expr e2) (vars_of_expr e3))  
@@ -147,7 +149,8 @@ let rec toks_of_expr = function
 | Leq(e1,e2) 
 | Le(e1,e2)   
 | Geq(e1,e2) 
-| Ge(e1,e2) -> union (toks_of_expr e1) (toks_of_expr e2)
+| Ge(e1,e2) 
+| VerSig(e1,e2) -> union (toks_of_expr e1) (toks_of_expr e2)
 | Bal(t)
 | BalPre(t) -> [t]
 | IfE(e1,e2,e3) -> union (toks_of_expr e1) (union (toks_of_expr e2) (toks_of_expr e3))
@@ -197,6 +200,7 @@ let rec subst_var x e = function
 | Le(e1,e2) -> Le(subst_var x e e1,subst_var x e e2) 
 | Geq(e1,e2) -> Geq(subst_var x e e1,subst_var x e e2)
 | Ge(e1,e2) -> Ge(subst_var x e e1,subst_var x e e2)
+| VerSig(e1,e2) -> VerSig(subst_var x e e1,subst_var x e e2)
 | Bal(t) -> Bal(t)
 | BalPre(t) -> BalPre(t)
 | IfE(e1,e2,e3) -> IfE(subst_var x e e1,subst_var x e e2,subst_var x e e3)
@@ -224,6 +228,7 @@ let rec subst_bal t (e:expr) = function
 | Le(e1,e2)  -> Le (subst_bal t e e1,subst_bal t e e2) 
 | Geq(e1,e2) -> Geq(subst_bal t e e1,subst_bal t e e2)
 | Ge(e1,e2)  -> Ge (subst_bal t e e1,subst_bal t e e2)
+| VerSig(e1,e2) -> VerSig(subst_bal t e e1,subst_bal t e e2)
 | e -> e
 
 
@@ -259,6 +264,7 @@ let rec simsubst (af:ide -> expr) (e:expr) : expr = match e with
 | Le(e1,e2) ->  Le (simsubst af e1,simsubst af e2) 
 | Geq(e1,e2) -> Geq(simsubst af e1,simsubst af e2)
 | Ge(e1,e2) ->  Ge (simsubst af e1,simsubst af e2)
+| VerSig(e1,e2) -> VerSig(simsubst af e1,simsubst af e2)
 | Bal(t) -> Bal(t)
 | BalPre(t) -> BalPre(t)
 | IfE(e1,e2,e3)    -> IfE   (simsubst af e1,simsubst af e2,simsubst af e3)

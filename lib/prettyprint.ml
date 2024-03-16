@@ -44,7 +44,8 @@ let rec string_of_expr e = match e with
   | Geq(e1,e2) -> int_binop e1 e2 ">=" 
   | Ge(e1,e2)  -> int_binop e1 e2 ">"  
   | Bal(t)     -> "balance(" ^ t ^ ")"
-  | BalPre(t)  -> "balance_pre(" ^ t ^ ")"  
+  | BalPre(t)  -> "balance_pre(" ^ t ^ ")"
+  | VerSig(e1,e2) -> "versig(" ^ string_of_expr e1 ^ "," ^ string_of_expr e2 ^ ")"  
   | IfE(e1,e2,e3) -> "(" ^ string_of_expr e1 ^ " ? " ^ string_of_expr e2 ^ " : " ^ string_of_expr e3 ^ ")"
   | MapUpd(e1,e2,e3) -> string_of_expr e1 ^ "[" ^ string_of_expr e2 ^ "->" ^ string_of_expr e3 ^ "]"
 

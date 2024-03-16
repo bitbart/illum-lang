@@ -107,6 +107,13 @@ let rec typecheck_expr env = function
   let b3 = unbox (typecheck_expr env e3) in
   expect_type e1 (TMap(b2,b3)) t1
   |> fun _ -> (TMap(b2,b3))
+| VerSig(e1,e2) -> 
+  let t1 = typecheck_expr env e1 in 
+  let _ = typecheck_expr env e2 in (* FIXME? *)
+  expect_type e1 t1 (TBase TAddr) 
+  |> fun _ -> (TBase TBool)
+
+
 let typecheck_cmd1 (env:ide -> hlltype) = function
 | SkipNF -> true
 | VarAssignNF(x,e) -> expect_type e (typecheck_expr env e) (env x)
