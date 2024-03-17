@@ -141,8 +141,8 @@ let hllc_post f xl tl nl fdl =
 }
 
 let hllc_fun xl tl fdl = function
-  | ConstrNF(al,fml,_,cl,nl) -> [ hllc_body "constructor" (List.map snd al) fml xl tl cl; hllc_post "constructor" xl tl nl fdl ]
-  | ProcNF(f,al,fml,_,cl,nl) -> [ hllc_body f (List.map snd al) fml xl tl cl; hllc_post f xl tl nl fdl ]
+  | ConstrNF(al,fml,_,cl,nl) -> [ hllc_body "constructor" (List.map fst al) fml xl tl cl; hllc_post "constructor" xl tl nl fdl ]
+  | ProcNF(f,al,fml,_,cl,nl) -> [ hllc_body f (List.map fst al) fml xl tl cl; hllc_post f xl tl nl fdl ]
 
 let complete_next f_univ = function
 | [] -> f_univ

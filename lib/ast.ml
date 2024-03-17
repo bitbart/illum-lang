@@ -44,7 +44,7 @@ type cmd =
 and btype = TInt | TUint | TAddr | TString | TBool
 and hlltype = TBase of btype | TMap of btype * btype
 
-and arg = btype * ide
+and arg = ide * btype
 
 and args = arg list
 

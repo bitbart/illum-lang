@@ -4,7 +4,7 @@ contract Test0 {
     int x; 
   
     function f(address a, int y) input(1:T0) {
-        x = x + y;
+        x += y;
         a.transfer(x:T);
     }
 }

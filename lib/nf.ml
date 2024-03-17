@@ -296,8 +296,8 @@ let nf2_cmd xl tl zl inl = function
     (c_init::cl')@[c_end]
 
 let nf2_fun xl tl = function
-  | ConstrNF(al,fml,vdl,c,nl) -> ConstrNF(al,fml,vdl,nf2_cmd xl tl (List.map snd al) fml.inputs c,nl) 
-  | ProcNF(f,al,fml,vdl,c,nl) -> ProcNF(f,al,fml,vdl,nf2_cmd xl tl (List.map snd al) fml.inputs c,nl)
+  | ConstrNF(al,fml,vdl,c,nl) -> ConstrNF(al,fml,vdl,nf2_cmd xl tl (List.map fst al) fml.inputs c,nl) 
+  | ProcNF(f,al,fml,vdl,c,nl) -> ProcNF(f,al,fml,vdl,nf2_cmd xl tl (List.map fst al) fml.inputs c,nl)
 
 let nf2 = function ContractNF(x,vl,fdl) -> 
   let tl = toks_of_contract (ContractNF(x,vl,fdl)) in

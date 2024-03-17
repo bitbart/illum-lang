@@ -121,7 +121,7 @@ args:
 ;
 
 arg:
-  | t = btype; x = ID { (t,x) }
+  | t = btype; x = ID { (x,t) }
 ;
 
 var_decl:

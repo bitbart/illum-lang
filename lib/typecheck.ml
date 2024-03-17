@@ -9,13 +9,12 @@ exception UnboundVar of ide
 (******************************************************************************)
 
 let rec env_of_ldecls = function
-    | [] -> fun x -> raise (UnboundVar x)
-    | (t,x)::l -> bind (env_of_ldecls l) x (TBase t)
+| [] -> fun x -> raise (UnboundVar x)
+| (x,t)::l -> bind (env_of_ldecls l) x (TBase t)
 
 let rec env_of_var_decls = function
 | [] -> fun x -> raise (UnboundVar x)
 | (x,t)::l -> bind (env_of_var_decls l) x t
-(*  VarDeclSeq(MapDecl(t1,t2,x),vl') -> bind (env_of_var_decls vl') x (TMap(t1,t2)) *) (* FIXME: remove? *)
 
 let unbox = function
 | TBase b -> b
@@ -124,18 +123,18 @@ let typecheck_cmd1 (env:ide -> hlltype) = function
 
 let fail_if_false b s c = if not b then failwith s else c
 
-let typecheck_fun_gen f_univ env (f,a,_,vdl,cl,nl) = 
-  let env1 = piecewise (env_of_ldecls a) env in 
+let typecheck_fun_gen f_univ env (f,al,_,vdl,cl,nl) = 
+  let env1 = piecewise (env_of_ldecls al) env in 
   let env2 = piecewise (env_of_var_decls vdl) env1 in ()
   |> fail_if_false (subseteq nl f_univ) ("Next of " ^ f ^ " not in contract functions");
   List.for_all (typecheck_cmd1 env2) cl
 
 let typecheck_fun f_univ env = function
   | ConstrNF(a,fml,vdl,cl,nl) -> ()
-    |> fail_if_false (no_dup (List.map snd a)) "Duplicate arguments in constructor "
+    |> fail_if_false (no_dup (List.map fst a)) "Duplicate arguments in constructor "
     |> fun _ -> typecheck_fun_gen f_univ env ("constructor",a,fml,vdl,cl,nl)
   | ProcNF(f,a,fml,vdl,cl,nl) -> () (* FIXME: local variables *)
-    |> fail_if_false (no_dup (List.map snd a)) ("Duplicate arguments in function ")
+    |> fail_if_false (no_dup (List.map fst a)) ("Duplicate arguments in function ")
     |> fun _ -> typecheck_fun_gen f_univ env (f,a,fml,vdl,cl,nl)
 
 let typecheck_dup_inputs fdl = fdl 
@@ -149,8 +148,8 @@ let typecheck_auths vl fdl =
   fdl 
   |> (* for each function declaration, construct (auth list, local var names list) *)
     List.map (fun fd -> match fd with 
-    | ConstrNF(al,fml,_,_,_) -> (fml.auths, List.map snd al) 
-    | ProcNF(_,al,fml,_,_,_) -> (fml.auths, List.map snd al))
+    | ConstrNF(al,fml,_,_,_) -> (fml.auths, List.map fst al) 
+    | ProcNF(_,al,fml,_,_,_) -> (fml.auths, List.map fst al))
   |> (* check that each auth list is includes in global or local vars *)
     List.fold_left (fun a_opt (authl,lvars) -> match find_notin authl (gvars @ lvars) with None -> a_opt | Some x -> Some x) None
   |> fun a_opt -> match a_opt with None -> true | Some a -> failwith ("Authorization of undefined variable " ^ a) 

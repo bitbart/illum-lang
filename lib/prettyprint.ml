@@ -82,7 +82,7 @@ let string_of_type_error(e,t_act,t_exp) =
 (*                        Pretty-printing of NF contracts                     *)
 (******************************************************************************)
 
-let string_of_arg (t,x)= (string_of_btype t) ^ " " ^ x
+let string_of_arg (x,t)= (string_of_btype t) ^ " " ^ x
 
 let string_of_args = List.fold_left (fun s a -> s ^ (if s<>"" then "," else "") ^ (string_of_arg a)) ""
 
