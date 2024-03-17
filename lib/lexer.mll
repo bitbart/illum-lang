@@ -42,6 +42,7 @@ rule read_token =
   | ">" { GE }
   | "." { SENDSEP }
   | ":" { TOKSEP }
+  | "?" { QMARK }
   | "balance" { BALANCE }
   | "contract" { CONTRACT }
   | "skip" { SKIP }
@@ -55,6 +56,7 @@ rule read_token =
   | "transfer" { SEND }
   | "constructor" { CONSTR } 
   | "function" { FUN }
+  | "view" { VIEW }
   | "," { ARGSEP }  
   | "bool" { TBOOL }
   | "int" { TINT }

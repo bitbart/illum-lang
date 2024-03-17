@@ -111,6 +111,7 @@ let rec typecheck_expr f env = function
   let _ = typecheck_expr f env e2 in (* FIXME? *)
   expect_type f e1 t1 (TBase TAddr) 
   |> fun _ -> (TBase TBool)
+| Expand(_,_) -> failwith "typecheck: something went wrong with view expansion: perhaps undefined or mutually recursive views?"
 
 let typecheck_cmd1 f (env:ide -> hlltype) = function
 | SkipNF -> true

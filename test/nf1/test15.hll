@@ -1,0 +1,13 @@
+// Test NF1: view
+
+contract Test15 {
+    int n; 
+
+    function f(int y, int z) view {
+        (y*z)/2
+    }
+
+    function g(address a, int x) {
+        n += f(x-1,x+1);
+    }
+}

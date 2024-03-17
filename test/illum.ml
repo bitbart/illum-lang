@@ -39,6 +39,8 @@ let%test "nf1_test11" = test_nf1 "nf1/test11.hll"
 let%test "nf1_test12" = test_nf1 "nf1/test12.hll"
 let%test "nf1_test13" = test_nf1 "nf1/test13.hll"
 let%test "nf1_test14" = test_nf1 "nf1/test14.hll"
+let%test "nf1_test15" = test_nf1 "nf1/test15.hll"
+let%test "nf1_test16" = test_nf1 "nf1/test16.hll"
 
 (******************************************************************************)
 (*                                       NF2                                  *)

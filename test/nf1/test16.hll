@@ -1,0 +1,17 @@
+// Test NF1: view calls another view
+
+contract Test16 {
+    int n; 
+
+    function v1(int y) view {
+        y+1
+    }
+
+    function v2(int z) view {
+        v1(z*2)-3
+    }
+
+    function g(address a, int x) {
+        n += v2(x+1);
+    }
+}

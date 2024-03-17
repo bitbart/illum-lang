@@ -5,7 +5,7 @@ contract LendingPool {
     uint Imul;      // interest rate multiplier
     uint D;         // total debt
     uint M;         // total minted tokens
-    uint oracle;    // interest accrut oracle
+    address oracle; // interest accrual oracle
     mapping (address => uint) debt;
     mapping (address => uint) mint;
 
@@ -20,19 +20,17 @@ contract LendingPool {
         oracle = o;
     }
 
-    /*
-    function X(n) view { // exchange rate 1:t = X() mint t
-        if (M==0) return 1 else return (n+D*Ir)/M
+    function X(uint n) view { // exchange rate 1:t = X() mint t
+        (M==0) ? 1 : (n+D*Ir)/M
     }
 
-    function C(a,n) view { // collateralization of a
-        return (mint[a]*X(n))/(debt[a]*Ir)
+    function C(address a, uint n) view { // collateralization of a
+        (mint[a]*X(n))/(debt[a]*Ir)
     }
-    */
 
     function deposit(address sender, uint x) input(x:T) { 
         uint y;
-        // y = x/X(balance(T)-x); // received minted tokens
+        y = x/X(balance(T)-x); // received minted tokens
         mint[sender]+=y; 
         M+=y;
     } 
@@ -42,7 +40,7 @@ contract LendingPool {
         sender.transfer(x:T); 
         debt[sender]+=x/Ir; 
         D+=x/Ir; 
-        // require C(sender,balance(T))>=Cmin;
+        require C(sender,balance(T))>=Cmin;
     } 
 
     function accrue() auth(oracle) {
@@ -61,17 +59,17 @@ contract LendingPool {
         sender.transfer(y:T); 
         mint[sender]-=x; 
         M-=x;
-        // require C(sender,balance(T))>=Cmin;
+        require C(sender,balance(T))>=Cmin;
     }
 
     function liquidate(address sender, uint x, address b) auth(sender) input(x:T) {
         uint y;
-        // y = (x/X(balance(T)-x))*Rliq;
-        // require debt[b]*Ir>x && C(b,#t-x)<Cmin && mint[b]>=y;
+        y = (x/X(balance(T)-x))*Rliq;
+        require debt[b]*Ir>x && C(b,balance(T)-x)<Cmin && mint[b]>=y;
         mint[sender]+=y; 
         mint[b]-=y; 
         debt[b]-=x/Ir; 
         D-=x/Ir;
-        // require C(b,balance(t))<=Cmin;
+        require C(b,balance(T))<=Cmin;
     }
 }

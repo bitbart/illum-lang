@@ -68,12 +68,13 @@ let rec depth_expr = function
   | Leq(e1,e2) 
   | Le (e1,e2)
   | Geq(e1,e2) 
-  | Ge (e1,e2) 
+  | Ge (e1,e2) -> 1 + max (depth_expr e1) (depth_expr e2)
   | VerSig(e1,e2) -> max (depth_expr e1) (depth_expr e2)
   | Bal(_) 
   | BalPre(_) -> 0
   | IfE(e1,e2,e3)  
   | MapUpd(e1,e2,e3) -> 1 + max (depth_expr e1) (max (depth_expr e2) (depth_expr e3))
+  | Expand(_,el) -> 1 + List.fold_left max 0 (List.map depth_expr el)
 
 (******************************************************************************)
 (*                                Variables in a contract                     *)
@@ -105,6 +106,7 @@ let rec vars_of_expr = function
   | BalPre(_) -> []
   | IfE(e1,e2,e3) -> union (vars_of_expr e1) (union (vars_of_expr e2) (vars_of_expr e3))  
   | MapUpd(e1,e2,e3) -> union (vars_of_expr e1) (union (vars_of_expr e2) (vars_of_expr e3))
+  | Expand(_,el) -> List.fold_left (fun l e -> union l (vars_of_expr e)) [] el
 
 and vars_of_cmd1 = function
     SkipNF -> []
@@ -157,6 +159,7 @@ let rec toks_of_expr = function
 | BalPre(t) -> [t]
 | IfE(e1,e2,e3) -> union (toks_of_expr e1) (union (toks_of_expr e2) (toks_of_expr e3))
 | MapUpd(e1,e2,e3) -> union (toks_of_expr e1) (union (toks_of_expr e2) (toks_of_expr e3))
+| Expand(_,_) -> failwith "toks_of_expr: Expand should never happen"
 
 let rec toks_of_cmd1 = function
 | SkipNF -> []
@@ -207,6 +210,10 @@ let rec subst_var x e = function
 | BalPre(t) -> BalPre(t)
 | IfE(e1,e2,e3) -> IfE(subst_var x e e1,subst_var x e e2,subst_var x e e3)
 | MapUpd(e1,e2,e3) -> MapUpd(subst_var x e e1,subst_var x e e2,subst_var x e e3)
+| Expand(f,el) -> Expand(f,List.map (subst_var x e) el)
+
+(******************************************************************************)
+(*                      Substitute variable in command                        *)
 
 (******************************************************************************)
 (*                      Substitute balance in expression                      *)
@@ -231,6 +238,7 @@ let rec subst_bal t (e:expr) = function
 | Geq(e1,e2) -> Geq(subst_bal t e e1,subst_bal t e e2)
 | Ge(e1,e2)  -> Ge (subst_bal t e e1,subst_bal t e e2)
 | VerSig(e1,e2) -> VerSig(subst_bal t e e1,subst_bal t e e2)
+| Expand(f,_) -> failwith ("subst_bal: Expand " ^ f ^ " should never happen")
 | e -> e
 
 
@@ -271,6 +279,7 @@ let rec simsubst (af:ide -> expr) (e:expr) : expr = match e with
 | BalPre(t) -> BalPre(t)
 | IfE(e1,e2,e3)    -> IfE   (simsubst af e1,simsubst af e2,simsubst af e3)
 | MapUpd(e1,e2,e3) -> MapUpd(simsubst af e1,simsubst af e2,simsubst af e3)
+| Expand(_,_) -> failwith "simsubst: Expand should never happen"
 
 (******************************************************************************)
 (*                          Get functions in a contract                       *)

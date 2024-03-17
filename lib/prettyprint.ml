@@ -48,6 +48,7 @@ let rec string_of_expr e = match e with
   | VerSig(e1,e2) -> "versig(" ^ string_of_expr e1 ^ "," ^ string_of_expr e2 ^ ")"  
   | IfE(e1,e2,e3) -> "(" ^ string_of_expr e1 ^ " ? " ^ string_of_expr e2 ^ " : " ^ string_of_expr e3 ^ ")"
   | MapUpd(e1,e2,e3) -> string_of_expr e1 ^ "[" ^ string_of_expr e2 ^ "->" ^ string_of_expr e3 ^ "]"
+  | Expand(x,el) -> x ^ "(" ^ (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" el) ^ ")"
 
 and bool_binop e1 e2 op  = 
   let s1,s2 = string_of_expr e1,string_of_expr e2 in 

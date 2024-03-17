@@ -28,6 +28,7 @@ type expr =
   | BalPre of tok                     (* balance of T before the call *)       
   | MapUpd of expr * expr * expr      (* e1[e2 -> e3] map update*)
   | VerSig of expr * expr             (* verify signature *)
+  | Expand of ide * (expr list)       (* expand a view function *)
 
 (******************************************************************************)
 (*                                     HeLLUM AST                             *)
@@ -39,7 +40,7 @@ type cmd =
   | Seq of cmd * cmd
   | Xfer of ide * expr * tok
   | If of expr * cmd * cmd
-  | Req of expr             
+  | Req of expr
 
 and btype = TInt | TUint | TAddr | TString | TBool
 and hlltype = TBase of btype | TMap of btype * btype
@@ -63,7 +64,8 @@ and var_decls = EmptyVarDecls | VarDeclSeq of var_decl * var_decls
 
 and fun_decl =
   | Constr of args * fmods * var_decls * cmd * (ide list)
-  | Proc of ide * args * fmods * var_decls * cmd * (ide list)           
+  | Proc of ide * args * fmods * var_decls * cmd * (ide list)
+  | View of ide * args * expr          
 
 type fun_decls = EmptyFunDecls | FunDeclSeq of fun_decl * fun_decls
 

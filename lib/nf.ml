@@ -17,7 +17,7 @@ let rec cmdNF_of_cmd = function
   (match cmdNF_of_cmd c2 with
   | [IfNF l2] -> [IfNF ((e,c1')::l2)]
   | c2' -> [IfNF [(e,c1');(True,c2')]])
-| Seq(c1,c2) -> (cmdNF_of_cmd c1) @ (cmdNF_of_cmd c2) 
+| Seq(c1,c2) -> (cmdNF_of_cmd c1) @ (cmdNF_of_cmd c2)
 
 let fmodsNF_of_fmods fml = 
   let rec fmodsNF_of_fmods_rec = function
@@ -35,17 +35,86 @@ let rec var_declsNF_of_var_decls = function
 | VarDeclSeq(VarDecl(t,x),vl') -> (x,TBase t)::(var_declsNF_of_var_decls vl') 
 | VarDeclSeq(MapDecl(t1,t2,x),vl') -> (x,TMap(t1,t2))::(var_declsNF_of_var_decls vl')
 
+
+(* rw_view_in_expr1 v e macro-expands the view v contained in the expression e *)
+let rec rw_view_in_expr1 vwl = function
+| Expand(f,el) -> (match (List.filter (function View(f',_,_) -> f=f' | _ -> false) vwl) with 
+    | [View(_,xl,e)] ->
+      if (List.length xl <> List.length el) then failwith ("View " ^ f ^ " used with the wrong number of arguments!")
+      else 
+      (* list (xi = formal parameter, ei = actual parameter) *)
+      let xel = List.map2 (fun x e -> (fst x,e)) xl el in 
+      (* in the return expression e, replace each formal parameter with the corresponding actual parameter *)
+      List.fold_left (fun e' (xi,ei) -> subst_var xi ei e') e xel
+    | _ -> Expand(f,el))
+| True -> True
+| False -> False
+| IntConst n -> IntConst n
+| AddrConst a -> AddrConst a 
+| StringConst s -> StringConst s                
+| Var x -> Var x
+| Not e -> Not (rw_view_in_expr1 vwl e)
+| Map(e1,e2) -> Map(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
+| And(e1,e2) -> And(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
+| Or (e1,e2) -> Or (rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
+| Add(e1,e2) -> Add(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
+| Sub(e1,e2) -> Sub(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
+| Mul(e1,e2) -> Mul(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
+| Div(e1,e2) -> Div(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)     
+| Eq (e1,e2) -> Eq (rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
+| Neq(e1,e2) -> Neq(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
+| Leq(e1,e2) -> Leq(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
+| Le (e1,e2) -> Le (rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
+| Geq(e1,e2) -> Geq(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2) 
+| Ge (e1,e2) -> Ge (rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
+| VerSig(e1,e2) -> VerSig(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
+| Bal(t) -> Bal(t) 
+| BalPre(t) -> BalPre(t)
+| IfE(e1,e2,e3) -> IfE(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2, rw_view_in_expr1 vwl e3) 
+| MapUpd(e1,e2,e3) -> MapUpd(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2, rw_view_in_expr1 vwl e3)
+
+let rec rw_view_in_expr vwl e = 
+  let e' = rw_view_in_expr1 vwl e in
+  if e = e' then e else rw_view_in_expr vwl e'
+
+let rec rw_view_in_cmd1 vwl = function
+| SkipNF -> SkipNF
+| VarAssignNF(x,e) -> VarAssignNF(x,rw_view_in_expr vwl e)
+| XferNF(x,e,t) -> XferNF(x,rw_view_in_expr vwl e,t)
+| ReqNF(e) -> ReqNF(rw_view_in_expr vwl e)
+| IfNF(bl) -> IfNF(List.map (fun (ei,ci) -> (rw_view_in_expr vwl ei, rw_view_in_cmd vwl ci)) bl)
+| SimAssign(_) -> failwith "rw_view_in_cmd1: should never happen"
+
+and rw_view_in_cmd vwl = List.map (rw_view_in_cmd1 vwl)
+
+let rw_view_in_fun vwl = function
+| ConstrNF(xl,fml,vdl,c,nl) -> ConstrNF(xl,fml,vdl,rw_view_in_cmd vwl c,nl)
+| ProcNF(f,xl,fml,vdl,c,nl) -> ProcNF(f,xl,fml,vdl,rw_view_in_cmd vwl c,nl)
+
+let rec views_of_fun_decls = function
+  | EmptyFunDecls -> []
+  | FunDeclSeq(View(f,xl,e),fl) -> View(f,xl,e)::views_of_fun_decls fl
+  | FunDeclSeq(_,fl) -> views_of_fun_decls fl
+
 let fun_declNF_of_fun_decl = function
   | Constr(xl,fml,vdl,c,nl) -> ConstrNF(xl,fmodsNF_of_fmods fml,var_declsNF_of_var_decls vdl,cmdNF_of_cmd c,nl)
   | Proc(f,xl,fml,vdl,c,nl) -> ProcNF(f,xl,fmodsNF_of_fmods fml,var_declsNF_of_var_decls vdl,cmdNF_of_cmd c,nl)
+  | View(_,_,_) -> failwith "fun_declNF_of_fun_decl: should never happen"
 
 let rec fun_declsNF_of_fun_decls = function
   | EmptyFunDecls -> []
-  | FunDeclSeq(f,fl) -> (fun_declNF_of_fun_decl f)::(fun_declsNF_of_fun_decls fl)
+  | FunDeclSeq(View(_,_,_),fl) -> fun_declsNF_of_fun_decls fl
+  | FunDeclSeq(f,fl) -> (fun_declNF_of_fun_decl f)::fun_declsNF_of_fun_decls fl
 
 let nf0 = function
-  | Contract(x,vdl,fdl) -> ContractNF(x,var_declsNF_of_var_decls vdl,fun_declsNF_of_fun_decls fdl)
-
+  | Contract(x,vdl,fdl) ->
+    (* filter the views *)
+    let vwl = views_of_fun_decls fdl in
+    (* construct the list of function definitions *) 
+    let fdl1 = fun_declsNF_of_fun_decls fdl in
+    (* expand the views in the function definitions *)
+    let fdl2 = List.map (fun fd -> rw_view_in_fun vwl fd) fdl1 in
+    ContractNF(x,var_declsNF_of_var_decls vdl,fdl2)
 
 (******************************************************************************)
 (*                            NF1: no nested if-then-else                     *)

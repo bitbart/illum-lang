@@ -73,6 +73,7 @@ let rec simplify_expr1 = function
   | e1' -> IfE(e1',simplify_expr1 e2,simplify_expr1 e3))
 | MapUpd(e1,e2,e3) -> MapUpd(simplify_expr1 e1,simplify_expr1 e2,simplify_expr1 e3)
 | VerSig(e1,e2) -> VerSig(simplify_expr1 e1,simplify_expr1 e2)
+| Expand(_,_) -> failwith "simplify_expr1: Expand should never happen"
 
 let rec simplify_expr e = 
   let e' = simplify_expr1 e in

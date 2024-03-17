@@ -31,10 +31,10 @@ open Ast
 
 %token CONTRACT
 %token CONSTR
-%token FUN
+%token FUN VIEW
 %token TBOOL TINT TUINT TADDR TSTRING TMAPPING ARROW
 %token AUTH AFTER INPUT NEXT
-%token SENDSEP TOKSEP ARGSEP
+%token QMARK SENDSEP TOKSEP ARGSEP
 
 %nonassoc ELSE
 
@@ -60,6 +60,21 @@ contract:
   | CONTRACT; c=ID; LBRACE; vdl = var_decls; fdl = fun_decls; RBRACE; EOF { Contract(c,vdl,fdl) }
 ;
 
+btype:
+  | TBOOL { TBool }
+  | TINT { TInt }
+  | TUINT { TUint }
+  | TADDR { TAddr }
+  | TSTRING { TString }
+
+args:
+  | a = separated_list(ARGSEP, arg) { a } 
+;
+
+arg:
+  | t = btype; x = ID { (x,t) }
+;
+
 expr:
   | n = CONST { IntConst(int_of_string n) }
   | TADDR; LPAREN; n = CONST; RPAREN; { AddrConst(int_of_string n) }
@@ -80,8 +95,10 @@ expr:
   | e1=expr; LE; e2=expr { Le(e1,e2) }
   | e1=expr; GEQ; e2=expr { Geq(e1,e2) }
   | e1=expr; GE; e2=expr { Ge(e1,e2) }
+  | LPAREN; e1=expr; RPAREN; QMARK; e2=expr; TOKSEP; e3=expr; { IfE(e1,e2,e3) }
   | x = ID { Var(x) }
   | e1 = expr; LBRACKET; e2 = expr; RBRACKET; { Map(e1,e2) }
+  | f = ID; LPAREN; el = separated_list(ARGSEP, expr); RPAREN; { Expand(f,el) }
   | LPAREN; e = expr; RPAREN { e }
 ;
 
@@ -109,21 +126,6 @@ cmd:
   | c1 = cmd; c2 = cmd; { Seq(c1,c2) }
 ;
 
-btype:
-  | TBOOL { TBool }
-  | TINT { TInt }
-  | TUINT { TUint }
-  | TADDR { TAddr }
-  | TSTRING { TString }
-
-args:
-  | a = separated_list(ARGSEP, arg) { a } 
-;
-
-arg:
-  | t = btype; x = ID { (x,t) }
-;
-
 var_decl:
   | t = btype; x = ID { VarDecl(t,x) }
   | TMAPPING; LPAREN; t1 = btype; ARROW; t2 = btype; RPAREN; x = ID; { MapDecl(t1,t2,x) }
@@ -133,10 +135,6 @@ var_decls:
   | vd = var_decl; { VarDeclSeq(vd,EmptyVarDecls) }
   | vd = var_decl; CMDSEP; vdl = var_decls { VarDeclSeq(vd,vdl) }
   | { EmptyVarDecls }
-;
-
-tokval:
-  | e = expr; TOKSEP; t = ID; { (e,t) }
 ;
 
 fmod:
@@ -167,6 +165,7 @@ fun_decl:
   | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; vdl = var_decls; RBRACE; { Proc(f,a,fml,vdl,Skip,[]) }
   | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; vdl = var_decls; c = cmd; RBRACE; nl = nexts; { Proc(f,a,fml,vdl,c,nl) }
   | FUN; f = ID; LPAREN; a = args; RPAREN; fml = fmods; LBRACE; vdl = var_decls; c = cmd; RBRACE; { Proc(f,a,fml,vdl,c,[]) }
+  | FUN; f = ID; LPAREN; a = args; RPAREN; VIEW; LBRACE; e = expr; RBRACE; { View(f,a,e) }
 ;
 
 fun_decls:
