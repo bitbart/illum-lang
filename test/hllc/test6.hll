@@ -1,5 +1,8 @@
+// Test HLLC: authorization with local variable
+
 contract Test6 {
     int x;
+    address b;
 
     function f(address a, int y) auth(a) {
         a.transfer(x:T);

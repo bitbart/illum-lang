@@ -1,8 +1,9 @@
 contract Test9 {
     uint x;
 
-    function f(address a) 
-        auth(a) // authorization of local variable  
+    function f(address a)
+        auth(b) // authorization of undefined variable
+        auth(a) 
     {
         x = x+1;
     }

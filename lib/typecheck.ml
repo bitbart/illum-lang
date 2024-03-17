@@ -143,17 +143,24 @@ let typecheck_dup_inputs fdl = fdl
   |> List.fold_left (fun t_opt inl -> match find_dup (List.map snd inl) with None -> t_opt | Some x -> Some x) None
   |> fun t_opt -> match t_opt with None -> true | Some t -> failwith ("Multiply defined input of token " ^ t) 
 
+(* checks that each variable in auth(...) is defined globally or locally *)
 let typecheck_auths vl fdl =
   let gvars = List.map fst vl in 
   fdl 
-  |> List.map (fun fd -> match fd with ConstrNF(_,fml,_,_,_) -> fml.auths | ProcNF(_,_,fml,_,_,_) -> fml.auths)
-  |> List.fold_left (fun t_opt authl -> match find_notin authl gvars with None -> t_opt | Some x -> Some x) None
-  |> fun t_opt -> match t_opt with None -> true | Some t -> failwith ("Authorization of non-global variable " ^ t) 
+  |> (* for each function declaration, construct (auth list, local var names list) *)
+    List.map (fun fd -> match fd with 
+    | ConstrNF(al,fml,_,_,_) -> (fml.auths, List.map snd al) 
+    | ProcNF(_,al,fml,_,_,_) -> (fml.auths, List.map snd al))
+  |> (* check that each auth list is includes in global or local vars *)
+    List.fold_left (fun a_opt (authl,lvars) -> match find_notin authl (gvars @ lvars) with None -> a_opt | Some x -> Some x) None
+  |> fun a_opt -> match a_opt with None -> true | Some a -> failwith ("Authorization of undefined variable " ^ a) 
 
+(* check that there exists at most one constructor *)
 let typecheck_dup_constr fdl = fdl 
   |> List.filter (fun fd -> match fd with ConstrNF(_,_,_,_,_) -> true | _ -> false)
   |> fun l -> if List.length l > 1 then failwith "Multiply defined constructor" else true 
   
+(* checke that there are no duplicate function names *)
 let rec typecheck_dup_fun = function
 | [] -> true
 | f::l -> if List.mem f l then failwith ("Multiply defined function " ^ f) else typecheck_dup_fun l

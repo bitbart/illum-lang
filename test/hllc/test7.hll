@@ -1,4 +1,4 @@
-// Test HLLC: 1 assignment, 1 tranfer, 0 next
+// Test HLLC: showcase for ILLUM paper
 
 contract Test7 {
     uint x; 

@@ -92,7 +92,12 @@ type var_declsNF = (ide * hlltype) list
 
 type fun_declNF =
   | ConstrNF of args * fmodsNF * var_declsNF * cmdNF * (ide list)
-  | ProcNF of ide * args * fmodsNF * var_declsNF * cmdNF * (ide list)           
+  | ProcNF of ide           (* function name *) 
+            * args          (* function parameters *)
+            * fmodsNF       (* function modifiers *)
+            * var_declsNF   (* local variables *)
+            * cmdNF         (* function body *)
+            * (ide list)    (* next callable functions *)       
 
 type contractNF = ContractNF of ide * var_declsNF * (fun_declNF list)
 

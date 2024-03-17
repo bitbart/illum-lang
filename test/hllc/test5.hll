@@ -1,3 +1,5 @@
+// Test HLLC: balance in input
+
 contract Test5 {
     int x;
     address a;
