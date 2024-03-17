@@ -1,0 +1,9 @@
+contract Test10 {
+    uint x;
+
+    function f(address a) 
+        auth(x) // wrong type in authorization  
+    {
+        x = x+1;
+    }
+}
