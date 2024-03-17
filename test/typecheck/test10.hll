@@ -1,8 +1,11 @@
 contract Test10 {
+    address b;
     uint x;
 
     function f(address a) 
-        auth(x) // wrong type in authorization  
+        auth(a)
+        auth(b) 
+        auth(a) // double authorization  
     {
         x = x+1;
     }

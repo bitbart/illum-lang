@@ -43,43 +43,43 @@ let meet t1 t2 = match t1,t2 with
 | (TMap(b1,b2),TMap(b1',b2')) -> TMap(bjoin b1 b1',bmeet b2 b2')
 | _ -> failwith "meet: incompatible types"
 
-let expect_type e t_act t_exp =
+let expect_type f e t_act t_exp =
   if subtype t_act t_exp then true
-  else failwith (string_of_type_error(e,t_act,t_exp))
+  else failwith (string_of_type_error(f,e,t_act,t_exp))
 
-let expect_comparable e t1 t2 =
+let expect_comparable f e t1 t2 =
     if subtype t1 t2 || subtype t2 t1 then true
-    else failwith (string_of_type_error(e,t1,t2)) (* FIXME: adapt error string *)
+    else failwith (string_of_type_error(f,e,t1,t2)) (* FIXME: adapt error string *)
   
-let rec typecheck_expr env = function
+let rec typecheck_expr f env = function
 | True 
 | False -> TBase TBool
 | IntConst _ -> TBase TUint
 | AddrConst _ -> TBase TAddr
 | StringConst _ -> TBase TString
 | Var x -> env x
-| Map(e1,e2) -> (match typecheck_expr env e1 with
+| Map(e1,e2) -> (match typecheck_expr f env e1 with
   | TMap(b1,b2) -> 
-    let t2 = typecheck_expr env e2 in
-    expect_type e2 t2 (TBase b1) 
+    let t2 = typecheck_expr f env e2 in
+    expect_type f e2 t2 (TBase b1) 
     |> fun _ -> TBase b2
-  | _ -> failwith ("Type error: " ^ string_of_expr e1 ^ " in " ^ string_of_expr (Map(e1,e2)) ^ " is not a mapping"))
+  | _ -> failwith ("Type error in" ^ f ^ ": " ^ string_of_expr e1 ^ " in " ^ string_of_expr (Map(e1,e2)) ^ " is not a mapping"))
 | Not e' -> 
-    expect_type e' (typecheck_expr env e') (TBase TBool) 
+    expect_type f e' (typecheck_expr f env e') (TBase TBool) 
     |> fun _ -> TBase TBool 
 | And(e1,e2)
 | Or(e1,e2) -> 
-    expect_type e1 (typecheck_expr env e1) (TBase TBool) 
-    |> fun _ -> expect_type e2 (typecheck_expr env e2) (TBase TBool)
+    expect_type f e1 (typecheck_expr f env e1) (TBase TBool) 
+    |> fun _ -> expect_type f e2 (typecheck_expr f env e2) (TBase TBool)
     |> fun _ -> TBase TBool 
 | Add(e1,e2)
 | Sub(e1,e2)
 | Mul(e1,e2)
 | Div(e1,e2) -> 
-    let t1 = typecheck_expr env e1 in
-    let t2 = typecheck_expr env e2 in
-    expect_type e1 t1 (TBase TInt)
-    |> fun _ -> expect_type e2 t2 (TBase TInt)
+    let t1 = typecheck_expr f env e1 in
+    let t2 = typecheck_expr f env e2 in
+    expect_type f e1 t1 (TBase TInt)
+    |> fun _ -> expect_type f e2 t2 (TBase TInt)
     |> fun _ -> meet t1 t2
 | Eq(e1,e2)
 | Neq(e1,e2)
@@ -87,39 +87,38 @@ let rec typecheck_expr env = function
 | Le(e1,e2) 
 | Geq(e1,e2)
 | Ge(e1,e2) -> 
-    let t1 = typecheck_expr env e1 in 
-    let t2 = typecheck_expr env e2 in
-    expect_comparable e2 t1 t2
+    let t1 = typecheck_expr f env e1 in 
+    let t2 = typecheck_expr f env e2 in
+    expect_comparable f e2 t1 t2
     |> fun _ -> TBase TBool
 | Bal(_)
 | BalPre(_) -> TBase TInt
 | IfE(e1,e2,e3) -> 
-  let t1 = typecheck_expr env e1 in 
-  let t2 = typecheck_expr env e2 in
-  let t3 = typecheck_expr env e3 in
-  expect_type e1 t1 (TBase TBool)
-  |> fun _ -> expect_comparable e2 t2 t3
+  let t1 = typecheck_expr f env e1 in 
+  let t2 = typecheck_expr f env e2 in
+  let t3 = typecheck_expr f env e3 in
+  expect_type f e1 t1 (TBase TBool)
+  |> fun _ -> expect_comparable f e2 t2 t3
   |> fun _ -> meet t2 t3
 | MapUpd(e1,e2,e3) -> 
-  let t1 = typecheck_expr env e1 in 
-  let b2 = unbox (typecheck_expr env e2) in
-  let b3 = unbox (typecheck_expr env e3) in
-  expect_type e1 (TMap(b2,b3)) t1
+  let t1 = typecheck_expr f env e1 in 
+  let b2 = unbox (typecheck_expr f env e2) in
+  let b3 = unbox (typecheck_expr f env e3) in
+  expect_type f e1 (TMap(b2,b3)) t1
   |> fun _ -> (TMap(b2,b3))
 | VerSig(e1,e2) -> 
-  let t1 = typecheck_expr env e1 in 
-  let _ = typecheck_expr env e2 in (* FIXME? *)
-  expect_type e1 t1 (TBase TAddr) 
+  let t1 = typecheck_expr f env e1 in 
+  let _ = typecheck_expr f env e2 in (* FIXME? *)
+  expect_type f e1 t1 (TBase TAddr) 
   |> fun _ -> (TBase TBool)
 
-
-let typecheck_cmd1 (env:ide -> hlltype) = function
+let typecheck_cmd1 f (env:ide -> hlltype) = function
 | SkipNF -> true
-| VarAssignNF(x,e) -> expect_type e (typecheck_expr env e) (env x)
-| XferNF(_,e,_) -> expect_type e (typecheck_expr env e) (TBase TInt)
-| ReqNF e -> expect_type e (typecheck_expr env e) (TBase TBool)
+| VarAssignNF(x,e) -> expect_type f e (typecheck_expr f env e) (env x)
+| XferNF(_,e,_) -> expect_type f e (typecheck_expr f env e) (TBase TInt)
+| ReqNF e -> expect_type f e (typecheck_expr f env e) (TBase TBool)
 | IfNF _ -> true (* FIXME *) 
-| SimAssign al -> List.for_all (fun (x,e) -> expect_type e (typecheck_expr env e) (env x)) al
+| SimAssign al -> List.for_all (fun (x,e) -> expect_type f e (typecheck_expr f env e) (env x)) al
 
 let fail_if_false b s c = if not b then failwith s else c
 
@@ -127,7 +126,7 @@ let typecheck_fun_gen f_univ env (f,al,_,vdl,cl,nl) =
   let env1 = piecewise (env_of_ldecls al) env in 
   let env2 = piecewise (env_of_var_decls vdl) env1 in ()
   |> fail_if_false (subseteq nl f_univ) ("Next of " ^ f ^ " not in contract functions");
-  List.for_all (typecheck_cmd1 env2) cl
+  List.for_all (typecheck_cmd1 f env2) cl
 
 let typecheck_fun f_univ env = function
   | ConstrNF(a,fml,vdl,cl,nl) -> ()
@@ -142,18 +141,37 @@ let typecheck_dup_inputs fdl = fdl
   |> List.fold_left (fun t_opt inl -> match find_dup (List.map snd inl) with None -> t_opt | Some x -> Some x) None
   |> fun t_opt -> match t_opt with None -> true | Some t -> failwith ("Multiply defined input of token " ^ t) 
 
+let typecheck_auths_nodup f authl = match find_dup authl with 
+| None -> true 
+| Some x -> failwith ("Duplicate authorization of " ^ x ^ " in " ^ f)
+
 (* checks that each variable in auth(...) is defined globally or locally *)
-let typecheck_auths vl fdl =
+let typecheck_auths_isdef f vl lvl authl =
+  let lvars = List.map fst lvl in
   let gvars = List.map fst vl in 
+  match find_notin authl (gvars @ lvars) with 
+| None -> true 
+| Some x ->  failwith ("Authorization of undefined variable " ^ x ^ " in " ^ f)
+
+let typecheck_auths_welltyped f vl lvl authl =
+  let env1 = env_of_var_decls vl in
+  let env2 = piecewise (env_of_ldecls lvl) env1 in 
+  List.for_all (fun x -> let tx = typecheck_expr f env2 (Var x) in expect_type f (Var x) tx (TBase TAddr)) authl
+
+let typecheck_auths vl fdl =
   fdl 
   |> (* for each function declaration, construct (auth list, local var names list) *)
     List.map (fun fd -> match fd with 
-    | ConstrNF(al,fml,_,_,_) -> (fml.auths, List.map fst al) 
-    | ProcNF(_,al,fml,_,_,_) -> (fml.auths, List.map fst al))
-  |> (* check that each auth list is includes in global or local vars *)
-    List.fold_left (fun a_opt (authl,lvars) -> match find_notin authl (gvars @ lvars) with None -> a_opt | Some x -> Some x) None
-  |> fun a_opt -> match a_opt with None -> true | Some a -> failwith ("Authorization of undefined variable " ^ a) 
-
+    | ConstrNF(al,fml,_,_,_) -> ("constructor", fml.auths, al) 
+    | ProcNF(f,al,fml,_,_,_) -> (f, fml.auths, al))
+  |> List.for_all (fun (f,authl,al) -> 
+    typecheck_auths_nodup f authl
+    &&
+    typecheck_auths_isdef f vl al authl
+    &&
+    typecheck_auths_welltyped f vl al authl
+  ) 
+    
 (* check that there exists at most one constructor *)
 let typecheck_dup_constr fdl = fdl 
   |> List.filter (fun fd -> match fd with ConstrNF(_,_,_,_,_) -> true | _ -> false)

@@ -76,8 +76,8 @@ let string_of_hlltype = function
   | TBase t -> string_of_btype t
   | TMap(t1,t2) -> "mapping(" ^ string_of_btype t1 ^ " => " ^ string_of_btype t2 ^ ")"
 
-let string_of_type_error(e,t_act,t_exp) =  
-  "Type error: " ^ string_of_expr e ^ 
+let string_of_type_error(f,e,t_act,t_exp) =  
+  "Type error in " ^ f ^ " : " ^ string_of_expr e ^ 
   " has type " ^ string_of_hlltype t_act ^ 
   " but an expression was expected of type " ^ string_of_hlltype t_exp 
 
