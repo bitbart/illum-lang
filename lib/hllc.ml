@@ -61,7 +61,6 @@ let rec rw_balances inl = function
 | c -> c
 
 let hllc_body_branch_pay inputs cl = cl
-
 (* construct list of parameters for Pay calls *)
 |> List.fold_left (fun d c -> match c with XferNF(x,e,t) -> [Var x;e;Var t]::d | _ -> d) []
 (* construct Pay calls *)
@@ -104,16 +103,24 @@ let funding_pre (tl:tok list) (inputs:(expr * tok) list) : (expr * tok) list =
   tl 
   |> List.map (fun t -> (Var (tokbal t),t))
   |> List.map (fun (e,t) -> match List.assoc_opt t rev_inputs with Some e' -> (Add(e,rw_balances inputs e'),t) | None -> (e,t))
- 
+
+(* name of the dynamic parameter for a signature required by address a *)
+let signame a = "sig_" ^ a
+
 let hllc_body f al fml xl tl cl = 
+  (* lauths = function parameters (of type address) for which we are asking authorization *)
+  let lauths = intersect fml.auths al in
+  (* for each local auth address, we need a signature as a dynamic parameter *)
+  let sigs = List.map signame lauths in
+  let versigs = List.fold_left (fun e a -> And(e,VerSig(Var a,Var(signame a)))) True lauths in
   let (b,cl') = match cl with 
-  | ReqNF e::tl -> (simplify_expr (rw_balances [] e),tl) (* CHECK! *)
-  | _ -> (True,cl)
+  | ReqNF e::tl -> (simplify_expr (And(rw_balances [] e, versigs)), tl)
+  | _ -> (simplify_expr versigs,cl)
   in
 {
   name = fst (clause_names f);
   spar = xl @ (tokvars tl);
-  dpar = al;
+  dpar = al @ sigs;
   walp = funding_pre tl fml.inputs;
   prep = b;
   cntr =  
@@ -123,10 +130,11 @@ let hllc_body f al fml xl tl cl =
 
 let hllc_post_branch xl tl = function
  | ConstrNF(_,_,_,_,_) -> failwith "hllc_post_branch: should never happen"  
- | ProcNF(g,_,fml,_,_,_) -> 
+ | ProcNF(g,al,fml,_,_,_) -> 
     let exl = List.map (fun x -> Var x) xl in
     let etl = List.map (fun t -> Var (tokbal t)) tl in
-    (decs fml.auths fml.afters [], Call [(g,exl @ etl)]) (* FIXME: questionmark parameter *)
+    (* remove the local authorizations (dealt with versig) from the global ones (dealt with auth) *)
+    (decs (diff fml.auths (List.map fst al)) fml.afters [], Call [(g,exl @ etl)]) 
 
 let hllc_post f xl tl nl fdl =
 {

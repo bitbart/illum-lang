@@ -4,9 +4,10 @@ contract Test6 {
     int x;
     address b;
 
-    function f(address a, int y) auth(a) {
+    function f(address a, int y) auth(a) auth(b) {
+        require(a != b);
         a.transfer(x:T);
-        a = b;
+        b = a;
     }
 }
 

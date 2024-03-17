@@ -15,6 +15,8 @@ let parse (s : string) : contract =
 
 let union l1 l2 = List.fold_left (fun l x -> if List.mem x l then l else x::l) l1 l2
 
+let intersect l1 l2 = List.filter (fun x -> List.mem x l2) l1
+
 let diff l1 l2 = List.filter (fun x -> not (List.mem x l2)) l1
 
 let is_disjoint l1 l2 = List.fold_left (fun b x -> b && not (List.mem x l2)) true l1
@@ -67,7 +69,7 @@ let rec depth_expr = function
   | Le (e1,e2)
   | Geq(e1,e2) 
   | Ge (e1,e2) 
-  | VerSig(e1,e2) -> 1 + max (depth_expr e1) (depth_expr e2)
+  | VerSig(e1,e2) -> max (depth_expr e1) (depth_expr e2)
   | Bal(_) 
   | BalPre(_) -> 0
   | IfE(e1,e2,e3)  
