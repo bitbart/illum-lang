@@ -1,0 +1,13 @@
+// Test NF1: nested view expansion
+
+contract Test17 {
+    int n; 
+
+    function f(int y) view {
+        (y*y)/2
+    }
+
+    function g(address a, int x) {
+        n += f(x+f(x+1));
+    }
+}
