@@ -1,0 +1,45 @@
+contract Escrow {
+    uint end_join;
+    uint end_choice;
+    uint feeRate;
+    address buyer; 
+    address seller;
+    address escrow;
+
+    constructor(address e, uint t1, uint t2, uint f) {
+        require (t1 < t2);
+        end_join = t1;
+        end_choice = t2;
+        escrow = e;
+        feeRate = f;
+    } next(join_buyer)
+
+    function join_buyer(address a, address b) input(x:T) { 
+        require a!=b;  // no schizophrenia
+        buyer = a;
+        seller = b;
+    } next(join_seller,redeem_on_timeout)
+
+    function join_seller() auth(seller) { 
+    } next(redeem_on_choice,arbitrate)
+
+    function redeem_on_choice(address rcv) auth(buyer) auth(seller) {
+        require(rcv==buyer || rcv==seller);
+        rcv.transfer(balance(T):T);
+    } next(end)
+
+    function redeem_on_timeout() after(end_join) { 
+        buyer.transfer(balance(T):T);
+    } next(end)
+
+    function fee(uint deposit) view { // computes the escrow fee
+        (deposit * feeRate) / 100
+    }
+
+    function arbitrate(address rcv) auth(escrow) after(end_choice) {
+        escrow.transfer(fee(balance(T)):T);
+        rcv.transfer(balance(T):T);    
+    } next(end)
+
+    function end() { } next(end) // sink state, terminates the contract
+}
