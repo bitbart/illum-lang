@@ -1,0 +1,42 @@
+contract Voting {
+    address owner;
+    uint candidate_end;
+    uint vote_end;
+    mapping (address => uint) votes;
+    mapping (address => bool) is_candidate;
+    address winner;
+    uint winner_votes;
+
+    constructor(address a, uint tc, uint tv) 
+    input(1:WT) {   // WT = Winner Token
+        owner = a;
+        candidate_end = tc;
+        vote_end = tv;
+        require candidate_end < vote_end;
+    } next(candidate,start_vote)
+
+    function candidate(address a) auth(a) {
+        is_candidate[a] = true;
+    }
+
+    function start_vote() after(candidate_end) {
+    } next(vote,win)
+
+    function vote(address a) input(1:VT) {
+        require is_candidate[a];
+    	votes[a] += 1;
+        if (votes[a] >= winner_votes) {
+            winner = a;
+            winner_votes = votes[a];
+        }
+    } next(vote,win)
+
+    function win() after(vote_end) {
+        if (winner!=address(0))
+            winner.transfer(1:WT);       // winner redeems winner token
+        owner.transfer(balance(VT):VT);  // owner redeems voting tokens 
+    } next(end)
+
+    function end() {
+    } next(end)
+}
