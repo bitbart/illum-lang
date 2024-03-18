@@ -4,6 +4,6 @@ contract Test3 {
     address c; 
 
     function f(int a, uint b) {
-        b = a + true;
+        b = a + true; // wrong types
     } next(f)
 }

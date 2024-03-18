@@ -1,0 +1,8 @@
+contract Test13 {
+
+    function f(int a) {
+        int a;
+
+        a+=1; // function parameter overlaps with local variable
+    }
+}

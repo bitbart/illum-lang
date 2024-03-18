@@ -159,8 +159,7 @@ let typecheck_auths_welltyped f vl lvl authl =
   let env2 = piecewise (env_of_ldecls lvl) env1 in 
   List.for_all (fun x -> let tx = typecheck_expr f env2 (Var x) in expect_type f (Var x) tx (TBase TAddr)) authl
 
-let typecheck_auths vl fdl =
-  fdl 
+let typecheck_auths vl fdl = fdl 
   |> (* for each function declaration, construct (auth list, local var names list) *)
     List.map (fun fd -> match fd with 
     | ConstrNF(al,fml,_,_,_) -> ("constructor", fml.auths, al) 
@@ -172,7 +171,21 @@ let typecheck_auths vl fdl =
     &&
     typecheck_auths_welltyped f vl al authl
   ) 
-    
+
+let typecheck_vars vl fdl = let vl' = List.map fst vl in
+  fdl 
+  |> (* for each function declaration, construct (auth list, local var names list) *)
+    List.map (fun fd -> match fd with 
+    | ConstrNF(al,_,lvl,_,_) -> ("constructor", List.map fst al, List.map fst lvl) 
+    | ProcNF(f,al,_,lvl,_,_) -> (f, List.map fst al, List.map fst lvl))
+  |> List.for_all (fun (f,al,lvl) -> 
+    (match find_dup (al@lvl) with None -> true | Some x -> failwith ("Formal parameter " ^ x ^ " in " ^ f ^ " overlaps with local variable"))
+    &&
+    (match find_dup (al@vl') with None -> true | Some x -> failwith ("Formal parameter " ^ x ^ " in " ^ f ^ " overlaps with global variable"))
+    &&
+    (match find_dup (lvl@vl') with None -> true | Some x -> failwith ("Local variable " ^ x ^ " in " ^ f ^ " overlaps with global variable"))
+    )
+
 (* check that there exists at most one constructor *)
 let typecheck_dup_constr fdl = fdl 
   |> List.filter (fun fd -> match fd with ConstrNF(_,_,_,_,_) -> true | _ -> false)
@@ -191,6 +204,7 @@ let typecheck c = match c with ContractNF(_,vl,fdl) ->
   |> fun _ -> typecheck_dup_constr fdl
   |> fun _ -> typecheck_dup_inputs fdl
   |> fun _ -> typecheck_auths vl fdl
+  |> fun _ -> typecheck_vars vl fdl
   |> fail_if_false (no_dup (List.map fst vl)) "Duplicate global variables" 
   |> fun _ -> List.for_all (typecheck_fun f_univ env) fdl
   |> fun _ ->  c

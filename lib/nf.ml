@@ -35,7 +35,6 @@ let rec var_declsNF_of_var_decls = function
 | VarDeclSeq(VarDecl(t,x),vl') -> (x,TBase t)::(var_declsNF_of_var_decls vl') 
 | VarDeclSeq(MapDecl(t1,t2,x),vl') -> (x,TMap(t1,t2))::(var_declsNF_of_var_decls vl')
 
-
 (* rw_view_in_expr1 v e macro-expands the view v contained in the expression e *)
 let rec rw_view_in_expr1 vwl = function
 | Expand(f,el) -> (match (List.filter (function View(f',_,_) -> f=f' | _ -> false) vwl) with 

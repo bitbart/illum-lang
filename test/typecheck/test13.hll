@@ -1,0 +1,7 @@
+contract Test13 {
+    int a; 
+
+    function f(int a) {
+        a+=1; // function parameter overlaps with global variable
+    }
+}

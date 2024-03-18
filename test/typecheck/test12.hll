@@ -1,6 +1,6 @@
 // Test NF1: nested view expansion
 
-contract Test17 {
+contract Test12 {
     int n; 
 
     function f(int y) view {
@@ -8,6 +8,6 @@ contract Test17 {
     }
 
     function g(address a, int x) {
-        n += f(x,x+1);
+        n += f(x,x+1); // wrong number of arguments
     }
 }

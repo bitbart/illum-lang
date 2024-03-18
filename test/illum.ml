@@ -104,6 +104,13 @@ let%test "typecheck_test6" = test_typecheck false "typecheck/test6.hll"
 let%test "typecheck_test7" = test_typecheck false "typecheck/test7.hll"
 let%test "typecheck_test8" = test_typecheck false "typecheck/test8.hll"
 let%test "typecheck_test9" = test_typecheck false "typecheck/test9.hll"
+let%test "typecheck_test10" = test_typecheck false "typecheck/test10.hll"
+let%test "typecheck_test11" = test_typecheck false "typecheck/test11.hll"
+(* let%test "typecheck_test12" = test_typecheck false "typecheck/test12.hll" *) (* FIXME: view issue are detected in NF0 *)
+let%test "typecheck_test13" = test_typecheck false "typecheck/test13.hll"
+let%test "typecheck_test14" = test_typecheck false "typecheck/test14.hll"
+let%test "typecheck_test15" = test_typecheck false "typecheck/test15.hll"
+
 
 (******************************************************************************)
 (*                                       HLLC                                 *)
