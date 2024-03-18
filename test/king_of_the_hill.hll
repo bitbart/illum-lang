@@ -1,0 +1,43 @@
+contract KingOfTheHill {
+    uint curse_duration;    // immutable
+    uint rate_percent;      // immutable
+    uint dethrone_fee;      // immutable
+    uint crown_fee;         // immutable
+    uint claim_price;
+    uint curse_start;
+    address owner;
+    address monarch;
+    string king_name;
+
+    constructor(address a, uint cf, uint df, uint r, uint d, string k, uint t) auth(a) after(t) {
+        crown_fee = cf;
+        dethrone_fee = df;
+        rate_percent = r;
+        curse_duration = d;
+        claim_price = cf;
+        curse_start = t;
+        owner = a;
+        monarch = a;
+        king_name = k;
+    }
+
+    // a becomes king with a vacant throne
+    function crown(address a, string k, uint t) auth(a) input(x:T) after(t) {
+        require t >= curse_start + curse_duration;
+        owner.transfer(crown_fee:T); 
+        claim_price = (crown_fee * rate_percent)/100;
+        curse_start = t;
+        monarch = a;
+        king_name = k;
+    }
+
+    function dethrone(address a, string k, uint t) auth(a) after(t) {
+        require t <= curse_start + curse_duration;
+        owner.transfer(dethrone_fee:T);
+        monarch.transfer(claim_price:T);
+        claim_price = (claim_price * rate_percent)/100; 
+        curse_start = t;
+        monarch = a;
+        king_name = k;
+    }
+}
