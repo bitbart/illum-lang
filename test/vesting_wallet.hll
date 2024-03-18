@@ -1,0 +1,38 @@
+contract VestingWallet {
+    uint released;
+    address beneficiary;
+    uint start;
+    uint duration;
+
+    constructor(address b, uint t, uint d) {
+        require (b != address(0) && d > 0);
+	    beneficiary = b;
+        start = t;
+        duration = d;
+    }
+
+    function receive() input(x:T) { }
+
+    function vestingSchedule(uint totalAllocation, uint timestamp) view {
+        (timestamp < start) 
+            ? 0
+            : (timestamp > start + duration) 
+                ? totalAllocation
+                : (totalAllocation * (timestamp - start)) / duration
+    }
+
+    function vestedAmount(uint timestamp) view {
+        vestingSchedule(balance(T) + released, timestamp)
+    }
+
+    function releasable(uint timestamp) view {
+        vestedAmount(timestamp) - released
+    }
+
+    function release(uint timestamp) after(timestamp) {
+        uint amount;
+        amount = releasable(timestamp);
+        released += amount;
+        beneficiary.transfer(amount:T);
+    }
+}
