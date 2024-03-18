@@ -11,6 +11,7 @@ contract Crowdfund {
     } next(deposit,finalize)
 
     function deposit(uint x, address a) input(x:T) {
+        require(x>=10);
        	funds[a] += x;
     } next(deposit,finalize)
 

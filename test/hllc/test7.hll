@@ -12,6 +12,5 @@ contract Test7 {
         }
     } next(f,g)
 
-    function g() { skip; }
-
+    function g() { }
 }
