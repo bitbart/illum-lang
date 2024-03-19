@@ -25,12 +25,16 @@ let rec simplify_expr1 = function
   | False,_ -> False
   | e1',True -> e1'
   | _,False -> False
+  | e1',e2' when e1'=e2' -> e1'
+  | Ge(e1',e1''),Leq(e2',e2'') when e1'=e2' && e1''=e2'' -> False
   | e1',e2' -> And(e1',e2'))
 | Or(e1,e2) -> (match simplify_expr1 e1, simplify_expr1 e2 with
   | True,_ -> True
   | False,e2' -> e2'
   | _,True -> True
   | e1',False -> e1'
+  | e1',e2' when e1'=e2' -> e1'
+  | Ge(e1',e1''),Leq(e2',e2'') when e1'=e2' && e1''=e2'' -> True
   | e1',e2' -> Or(e1',e2'))
 | Add(e1,e2) -> (match simplify_expr1 e1, simplify_expr1 e2 with
   | IntConst n1,IntConst n2 -> IntConst (n1+n2)

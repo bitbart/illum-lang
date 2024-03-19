@@ -13,7 +13,7 @@ contract Vault {
         wait_time = wt;
     } next(receive,withdraw)
 
-    function receive() input(x:T) { 
+    function receive(uint x) input(x:T) { 
     } next(receive,withdraw)
 
     function withdraw(address rcv, uint amt, uint time) auth(owner) {

@@ -7,7 +7,7 @@ open Simplify_expr
 (*                                 HeLLUM -> ILLUM compiler                   *)
 (******************************************************************************)
 
-let clause_names (f:string) = f, "Post-" ^ f
+let clause_names (f:string) = f ^ "_run", f ^ "_next"
 
 let tokbal t = "bal_" ^ t
 

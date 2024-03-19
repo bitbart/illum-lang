@@ -1,0 +1,13 @@
+// Test HLLC: after with local variable
+
+contract Test17 {
+    uint x;
+    address a;
+
+    constructor() { }
+    
+    function f(uint y) input(y+z:T) { // variable z in auth is a local variable
+        uint z;
+        a.transfer(y:T);
+    }
+}

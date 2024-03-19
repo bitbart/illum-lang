@@ -3,6 +3,7 @@ contract VestingWallet {
     address beneficiary;
     uint start;
     uint duration;
+    uint timestamp_reserve;
 
     constructor(address b, uint t, uint d) {
         require (b != address(0) && d > 0);
@@ -11,7 +12,7 @@ contract VestingWallet {
         duration = d;
     }
 
-    function receive() input(x:T) { }
+    function receive(uint x) input(x:T) { }
 
     function vestingSchedule(uint totalAllocation, uint timestamp) view {
         (timestamp < start) 
@@ -29,9 +30,13 @@ contract VestingWallet {
         vestedAmount(timestamp) - released
     }
 
-    function release(uint timestamp) after(timestamp) {
+    function reserve(uint timestamp) {
+        timestamp_reserve = timestamp;
+    }
+
+    function release() after(timestamp_reserve) {
         uint amount;
-        amount = releasable(timestamp);
+        amount = releasable(timestamp_reserve);
         released += amount;
         beneficiary.transfer(amount:T);
     }

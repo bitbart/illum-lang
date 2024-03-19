@@ -5,7 +5,7 @@ contract Test2 {
   
     function f(address a, int y) input(1:T) {
         if (y > 5) {
-            x = balance(T) - 1;
+            x = balance(T) - y/2;
             a.transfer(x:T);
             x = balance(T);
             require x > 5;

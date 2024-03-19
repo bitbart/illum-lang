@@ -1,0 +1,14 @@
+// Test HLLC: after with local variable
+
+contract Test8 {
+    uint x;
+    uint t;
+    address a;
+
+    constructor() { }
+    
+    function f(int y) after(t) {
+        require(t < 1000);
+        a.transfer(x:T);
+    }
+}

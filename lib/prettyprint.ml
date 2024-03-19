@@ -125,7 +125,7 @@ let rec string_of_cmdNF1 t = function
   | SimAssign al ->
     let (xl,el) = (List.map fst al, List.map snd al) in 
     tabs t (
-      (List.fold_left (fun s x -> s ^ (if s<>"" then "," else "") ^ x) "" xl) ^ " |= " ^
+      (List.fold_left (fun s x -> s ^ (if s<>"" then "," else "") ^ x) "" xl) ^ " = " ^
       (List.fold_left (fun s e -> s ^ (if s<>"" then "," else "") ^ string_of_expr e) "" el) ^ 
       ";")
 
@@ -200,10 +200,10 @@ and string_of_contrC l = List.fold_left
   ) 
   "" l 
 
-let string_of_wallet w = "wallet: " ^
+let string_of_wallet w = "precond_wallet: " ^
   List.fold_left (fun s (e,t) -> s ^ (if s<>"" then "," else "") ^ string_of_expr e ^ ":" ^ t) "" w
 
-let string_of_prep e = "require: " ^ string_of_expr e
+let string_of_prep e = "precond_if: " ^ string_of_expr e
 
 let string_of_clause (c:clause) = 
   "clause " ^ c.name ^ 
@@ -212,7 +212,7 @@ let string_of_clause (c:clause) =
   (List.fold_left (fun s x -> s ^ (if s<>"" then "," else "") ^ x) "" c.dpar) ^ ") {\n" ^
   tabs 1 (string_of_wallet c.walp) ^ "\n" ^
   tabs 1 (string_of_prep c.prep) ^ "\n" ^
-  tabs 1 "branch: \n" ^
+  tabs 1 "process: \n" ^
   string_of_contrC c.cntr ^ 
   "\n}\n"
 
