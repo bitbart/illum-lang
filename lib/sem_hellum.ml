@@ -1,17 +1,8 @@
 open Ast
 
-type loc = int
-
-type exprval = Bool of bool | Int of int | String of string
-type envval = IVar of loc | IProc of args * cmd
-type memval = int
-
+type envval1 = VInt of int | VString of string | VBool of bool
+type envval = VBase of envval1 | VMap of (envval1 -> envval1)
 type env = ide -> envval
-type mem = loc -> memval
-
-(* The third component of the state is the first free location.
-   We assume that the store is unbounded *)
-type state = env list * mem * loc
 
 let topenv (el,_,_) = match el with
     [] -> failwith "empty environment stack"
@@ -22,9 +13,10 @@ let popenv (el,_,_) = match el with
   | _::el' -> el'
 
 let getenv (el,_,_) = el
-let getmem (_,m,_) = m
-let getloc (_,_,l) = l
-  
+
+
+
+(*
 type conf = St of state | Cmd of cmd * state
 
 
@@ -45,17 +37,21 @@ let is_val = function
   | False -> true
   | IntConst _ -> true
   | StringConst _ -> true
+  | AddrConst _ -> true
   | _ -> false
-
+*)
 
 (******************************************************************************)
 (*                       Big-step semantics of expressions                    *)
 (******************************************************************************)
 
+
+let eval_expr _ = function
+    True -> VBool true
+  | False -> VBool false
+  | _ -> failwith "TODO"
+
 (*
-let rec eval_expr st = function
-    True -> Bool true
-  | False -> Bool false
   | Var x -> Int (apply st x)
   | IntConst n -> Int n
   | AddrConst n -> Int n   (* check! *)
@@ -109,16 +105,16 @@ let rec eval_expr st = function
       | _ -> raise (TypeError "Ge")
     )
   | Bal(_) -> failwith ("TODO")          
+*)
 
+let sem_cmd cenv _ = function
+  | SkipNF -> cenv
+  | VarAssignNF(_,_) -> failwith "TODO"
+  | _ -> failwith "TODO"
+    (* bind cenv (eval_expr cenv fenv e) x *)
 
-let rec trace1_cmd = function
-    St _ -> raise NoRuleApplies
-  | Cmd(c,st) -> match c with
-      Skip -> St st
-    | Assign(x,e) -> (match (topenv st x,eval_expr st e) with
-          (IVar l,Int n) -> St (getenv st, bind (getmem st) l n, getloc st)
-        | _ -> failwith "assign: type error")
-    | Seq(c1,c2) -> (match trace1_cmd (Cmd(c1,st)) with
+(*
+        | Seq(c1,c2) -> (match trace1_cmd (Cmd(c1,st)) with
           St st1 -> Cmd(c2,st1)
         | Cmd(c1',st1) -> Cmd(Seq(c1',c2),st1))
     | If(e,c1,c2) -> (match eval_expr st e with
