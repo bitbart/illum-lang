@@ -1,4 +1,4 @@
-// Test HLLC: 1 assignment, 1 tranfer, 1 next
+// Test HLLC: 1 assignment, 1 tranfer, 1 next, expression in input modifier
 
 contract Test2 {
     int x; 

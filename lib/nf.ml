@@ -346,7 +346,6 @@ let nf2_if xl tl zl inl bl =
   |> fun y -> [ IfNF (List.map (fun (ei,(ci,sti)) -> (ei,(c_init::ci)@[simassign_end xl tl sti])) y) ]
 
 let nf2_cmd xl tl zl inl = function
-| [] -> []
 | [(ReqNF er); IfNF bl] ->
     let er' = simplify_expr (add_inputs_req inl er) in 
     (ReqNF er')::(nf2_if xl tl zl inl bl) 
