@@ -60,14 +60,15 @@ contract Test18 {
     }
 
     function f7() {
-        if (x<20) {
-            require (x<100);
-            // c1;
-}       else if (n<10) {
-            require (n<200);
-            // c2;
+        if (x<2) {
+           require (x>0);
+            // c1
+        } else if (x<4) {
+            require (x>2);
+            // c2
         } else {
-            require (n<300);
+            require (x<8);
+            // c3
         }
     }
 

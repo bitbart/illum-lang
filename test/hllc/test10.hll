@@ -1,0 +1,15 @@
+// HLLC: showcase 
+
+contract Test10 { 
+    int x;
+    int y;
+    address a;
+
+    function f(int z) {
+        y = x + balance(T);
+        x = z;
+        a.transfer(x:T);
+        a.transfer (y:T);
+        y = balance(T) + z;
+    }
+}
