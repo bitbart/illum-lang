@@ -6,32 +6,34 @@ HeLLUM is a subset of Solidity that is suitable to be executed on UTXO blockchai
 For example, the following is an [Auction contract](test/auction.hll) in HeLLUM:
 ```
 contract Auction {
-    uint t; 	// timeout
-    uint m; 	// min bid
-    address W; 	// winner  
-    address A; 	// owner
+    uint deadline;
+    uint min_bid;
+    address winner;  
+    address seller;
 
-    constructor(address owner, uint timeout, uint min_bid) {
-        t = timeout; 
-        m = min_bid;
-        A = owner;
-        W = address(0);
+    constructor(address a, uint d, uint m) {
+        seller = a;
+        deadline = d;
+        min_bid = m;
     }
     
-    function bid(uint v, address X) 
-      input(v:T)  // receives v tokens of type T 
-    { 
-        require(X!=address(0) && v>=m && v>balance(T));
-        if (W!=address(0))
-            W.transfer((balance(T)-v):T);
-        W = X;
+    function bid(uint v, address a) input(v:T) {
+        require v >= min_bid;
+        require v > balance(T);     // the current bid is greater than the previous ones 
+        require a != address(0);
+        
+        // the previous maximum bid is returned to the previous winner
+        winner.transfer((balance(T)-v):T);
+        
+        // the new winner is set to the current (highest) bidder
+        winner = a;
     }
         
-    function close() 
-        auth(A)   // requires A's authorization
-        after(t)  // can be called after block t
+    function close()
+        auth(seller) 
+        after(deadline) 
     {
-        A.transfer(balance(T):T);
+        seller.transfer(balance(T):T);
     }
 }
 ```
@@ -39,10 +41,18 @@ contract Auction {
 ## HeLLUM contracts
 
 The repository includes a benchmark of common Solidity smart contracts, implemented in HeLLUM:
-- [Auction](test/auction.hll)
-- [Constant-product AMM](test/amm.hll)
 - [Crowdfund](test/crowdfund.hll)
+- [Auction](test/auction.hll)
 - [Payment splitter](test/payment_splitter.hll)
+- [Vault](test/vault.hll)
+- [Automated Market Maker](test/amm.hll)
+- [Voting](test/voting.hll)
+- [Vesting wallet](test/vesting_wallet.hll)
+- [Escrow](test/escrow.hll)
+- [King of the Hill](test/king_of_the_hill.hll)
+- [Blind auction](test/blind_auction.hll)
+- [Lending pool](test/lending_pool.hll)
+- [Lottery](test/lottery.hll)
 
 ## Installation and setup
 
@@ -73,12 +83,13 @@ eval $(opam env)
 
 Finally, we need a few extra OCaml packages:
 ```bash
-opam install -y dune ocaml-lsp-server odoc ocamlformat menhir ppx_inline_test
+opam install -y dune ocaml-lsp-server odoc ocamlformat menhir ppx_inline_test digestif
 ```
 In particular, this installation includes:
 - [**dune**](https://dune.readthedocs.io/), a build system for OCaml projects, similar to make;
 - [**Menhir**](http://gallium.inria.fr/~fpottier/menhir/), a parser generator;
-- [**ppx_inline_test**](https://github.com/janestreet/ppx_inline_test), a tool for writing in-line tests in OCaml.
+- [**ppx_inline_test**](https://github.com/janestreet/ppx_inline_test), a tool for writing in-line tests in OCaml;
+- [**digestif**](https://github.com/mirage/digestif), for cryptographic hashes. 
 
 ## Running the ILLUM compiler
 
@@ -95,43 +106,55 @@ dune exec illum hllc test/auction.hll
 If successful, the command produces a set of ILLUM clauses.
 For example, the clauses resulting from the compilation of the Auction contract are:
 ```
-clause bid(t,m,W,A,bal_T; v,X) {    
-  wallet: bal_T+v:T
-  require: ((X!=address(0)) && (v>=m)) && (v>balance(T))
-  branch: 
-    call( Check(W!=address(0)) || Pay(W,balance_pre(T)-v,T) || Post-bid(t,m,X,A,(bal_T+v)-((bal_T+v)-v)) )
-    call( Check(!(W!=address(0))) || Post-bid(t,m,X,A,bal_T+v) )
+clause constructor_run(deadline,min_bid,winner,seller,bal_T; a,d,m) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call constructor_next(d,m,winner,a,bal_T)
 }
-clause Post-bid(t,m,W,A,bal_T; ) {
-  wallet: 
-  require: true
-  branch: 
-    call bid(t,m,W,A,bal_T)
-    auth(A) afterAbs(t) : call close(t,m,W,A,bal_T)
+clause constructor_next(deadline,min_bid,winner,seller,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call bid(deadline,min_bid,winner,seller,bal_T)
+    auth(seller) afterAbs(deadline) : call close(deadline,min_bid,winner,seller,bal_T)
 }
-clause close(t,m,W,A,bal_T; ) {
-  wallet: bal_T:T
-  require: true
-  branch: 
-    call( Pay(A,balance_pre(T),T) || Post-close(t,m,W,A,bal_T-bal_T) )
+clause bid_run(deadline,min_bid,winner,seller,bal_T; v,a) {
+  precond_wallet: bal_T+v:T
+  precond_if: (v>=min_bid && (v>bal_T+v)) && a!=address(0)
+  process: 
+    call( Pay(winner,(bal_T+v)-v,T) | bid_next(deadline,min_bid,a,seller,(bal_T+v)-bal_T) )
 }
-clause Post-close(t,m,W,A,bal_T; ) {
-  wallet: 
-  require: true
-  branch: 
-    call bid(t,m,W,A,bal_T)
-    auth(A) afterAbs(t) : call close(t,m,W,A,bal_T)
+clause bid_next(deadline,min_bid,winner,seller,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call bid(deadline,min_bid,winner,seller,bal_T)
+    auth(seller) afterAbs(deadline) : call close(deadline,min_bid,winner,seller,bal_T)
+}
+clause close_run(deadline,min_bid,winner,seller,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call( Pay(seller,bal_T,T) | close_next(deadline,min_bid,winner,seller,0) )
+}
+clause close_next(deadline,min_bid,winner,seller,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call bid(deadline,min_bid,winner,seller,bal_T)
+    auth(seller) afterAbs(deadline) : call close(deadline,min_bid,winner,seller,bal_T)
 }
 clause Pay(a,v,t; ) {
-  wallet: v:t
-  require: true
-  branch: 
+  precond_wallet: v:t
+  precond_if: true
+  process: 
     send(v:t -> a)
 }
 clause Check(b; ) {
-  wallet: 
-  require: b
-  branch: 
-    send(0:T -> Null)
+  precond_wallet: 
+  precond_if: b
+  process: 
+    send()
 }
 ```

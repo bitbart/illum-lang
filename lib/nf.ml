@@ -52,13 +52,15 @@ let rec rw_view_in_expr1 vwl = function
 | StringConst s -> StringConst s                
 | Var x -> Var x
 | Not e -> Not (rw_view_in_expr1 vwl e)
+| Hash e -> Hash (rw_view_in_expr1 vwl e)
 | Map(e1,e2) -> Map(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
 | And(e1,e2) -> And(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
 | Or (e1,e2) -> Or (rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
 | Add(e1,e2) -> Add(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
 | Sub(e1,e2) -> Sub(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
 | Mul(e1,e2) -> Mul(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
-| Div(e1,e2) -> Div(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)     
+| Div(e1,e2) -> Div(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
+| Mod(e1,e2) -> Mod(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)     
 | Eq (e1,e2) -> Eq (rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
 | Neq(e1,e2) -> Neq(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
 | Leq(e1,e2) -> Leq(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2)
@@ -70,6 +72,9 @@ let rec rw_view_in_expr1 vwl = function
 | BalPre(t) -> BalPre(t)
 | IfE(e1,e2,e3) -> IfE(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2, rw_view_in_expr1 vwl e3) 
 | MapUpd(e1,e2,e3) -> MapUpd(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2, rw_view_in_expr1 vwl e3)
+| StrLen e -> StrLen(rw_view_in_expr1 vwl e)
+| SubStr(e1,e2,e3) -> SubStr(rw_view_in_expr1 vwl e1, rw_view_in_expr1 vwl e2, rw_view_in_expr1 vwl e3)
+| IntOfString(e) -> IntOfString(rw_view_in_expr1 vwl e)
 
 let rec rw_view_in_expr vwl e = 
   let e' = rw_view_in_expr1 vwl e in

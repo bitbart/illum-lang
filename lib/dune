@@ -1,5 +1,6 @@
 (library
- (name illumLib))
+ (name illumLib)
+ (libraries digestif))
 
 (menhir
  (modules parser))

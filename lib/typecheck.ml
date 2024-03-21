@@ -66,7 +66,10 @@ let rec typecheck_expr f env = function
   | _ -> failwith ("Type error in" ^ f ^ ": " ^ string_of_expr e1 ^ " in " ^ string_of_expr (Map(e1,e2)) ^ " is not a mapping"))
 | Not e' -> 
     expect_type f e' (typecheck_expr f env e') (TBase TBool) 
-    |> fun _ -> TBase TBool 
+    |> fun _ -> TBase TBool
+| Hash e' -> 
+      expect_type f e' (typecheck_expr f env e') (TBase TString) 
+      |> fun _ -> TBase TString
 | And(e1,e2)
 | Or(e1,e2) -> 
     expect_type f e1 (typecheck_expr f env e1) (TBase TBool) 
@@ -76,6 +79,12 @@ let rec typecheck_expr f env = function
 | Sub(e1,e2)
 | Mul(e1,e2)
 | Div(e1,e2) -> 
+    let t1 = typecheck_expr f env e1 in
+    let t2 = typecheck_expr f env e2 in
+    expect_type f e1 t1 (TBase TInt)
+    |> fun _ -> expect_type f e2 t2 (TBase TInt)
+    |> fun _ -> meet t1 t2
+| Mod(e1,e2) -> 
     let t1 = typecheck_expr f env e1 in
     let t2 = typecheck_expr f env e2 in
     expect_type f e1 t1 (TBase TInt)
@@ -112,6 +121,21 @@ let rec typecheck_expr f env = function
   expect_type f e1 t1 (TBase TAddr) 
   |> fun _ -> (TBase TBool)
 | Expand(_,_) -> failwith "typecheck: something went wrong with view expansion: perhaps undefined or mutually recursive views?"
+| StrLen e1 -> 
+  let t1 = typecheck_expr f env e1 in
+  expect_type f e1 t1 (TBase TString)
+  |> fun _ -> TBase TInt
+| SubStr(e1,e2,e3) -> 
+  let t1 = typecheck_expr f env e1 in 
+  let t2 = typecheck_expr f env e2 in
+  let t3 = typecheck_expr f env e3 in
+  expect_type f e1 t1 (TBase TString)
+  |> fun _ -> expect_type f e2 t2 (TBase TInt)
+  |> fun _ -> expect_type f e3 t3 (TBase TInt)
+  |> fun _ -> TBase TString
+| IntOfString e' ->
+      expect_type f e' (typecheck_expr f env e') (TBase TString) 
+    |> fun _ -> TBase TInt
 
 let typecheck_cmd1 f (env:ide -> hlltype) = function
 | SkipNF -> true

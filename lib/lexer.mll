@@ -34,6 +34,11 @@ rule read_token =
   | "-" { MINUS }
   | "*" { MUL }  
   | "/" { DIV }
+  | "%" { MOD }
+  | "sha256" { HASH }
+  | "sub" { SUBSTR }
+  | "length" { STRLEN}
+  | "int_of_string" { INTOFSTRING }
   | "==" { EQ }
   | "!=" { NEQ }
   | "<=" { LEQ }  

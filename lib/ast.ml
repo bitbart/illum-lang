@@ -17,6 +17,8 @@ type expr =
   | Sub of expr * expr
   | Mul of expr * expr
   | Div of expr * expr
+  | Mod of expr * expr
+  | Hash of expr
   | Eq of expr * expr
   | Neq of expr * expr
   | Leq of expr * expr
@@ -29,6 +31,9 @@ type expr =
   | MapUpd of expr * expr * expr      (* e1[e2 -> e3] map update*)
   | VerSig of expr * expr             (* verify signature *)
   | Expand of ide * (expr list)       (* expand a view function *)
+  | StrLen of expr                    (* string length *)
+  | SubStr of expr * expr * expr      (* substring *)
+  | IntOfString of expr               (* convert string to int *)
 
 (******************************************************************************)
 (*                                     HeLLUM AST                             *)

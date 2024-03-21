@@ -55,14 +55,16 @@ let rec depth_expr = function
   | AddrConst _ 
   | StringConst _                
   | Var _ -> 0
-  | Not e -> 1 + depth_expr e
+  | Not e 
+  | Hash e -> 1 + depth_expr e
   | Map(e1,e2)
   | And(e1,e2) 
   | Or (e1,e2) 
   | Add(e1,e2)
   | Sub(e1,e2)
   | Mul(e1,e2)
-  | Div(e1,e2)      
+  | Div(e1,e2)
+  | Mod(e1,e2)      
   | Eq (e1,e2) 
   | Neq(e1,e2)
   | Leq(e1,e2) 
@@ -75,6 +77,9 @@ let rec depth_expr = function
   | IfE(e1,e2,e3)  
   | MapUpd(e1,e2,e3) -> 1 + max (depth_expr e1) (max (depth_expr e2) (depth_expr e3))
   | Expand(_,el) -> 1 + List.fold_left max 0 (List.map depth_expr el)
+  | StrLen e -> 1 + depth_expr e
+  | SubStr(e1,e2,e3) -> 1 + max (depth_expr e1) (max (depth_expr e2) (depth_expr e3))
+  | IntOfString e -> 1 + depth_expr e
 
 (******************************************************************************)
 (*                                Variables in a contract                     *)
@@ -88,13 +93,15 @@ let rec vars_of_expr = function
   | StringConst _ -> []               
   | Var x -> [x]
   | Map(e1,e2) -> union (vars_of_expr e1) (vars_of_expr e2)
-  | Not e -> vars_of_expr e
+  | Not e 
+  | Hash e -> vars_of_expr e
   | And(e1,e2) 
   | Or(e1,e2) 
   | Add(e1,e2)
   | Sub(e1,e2)
   | Mul(e1,e2)
-  | Div(e1,e2)      
+  | Div(e1,e2)
+  | Mod(e1,e2)      
   | Eq(e1,e2) 
   | Neq(e1,e2)
   | Leq(e1,e2) 
@@ -107,6 +114,9 @@ let rec vars_of_expr = function
   | IfE(e1,e2,e3) -> union (vars_of_expr e1) (union (vars_of_expr e2) (vars_of_expr e3))  
   | MapUpd(e1,e2,e3) -> union (vars_of_expr e1) (union (vars_of_expr e2) (vars_of_expr e3))
   | Expand(_,el) -> List.fold_left (fun l e -> union l (vars_of_expr e)) [] el
+  | StrLen e -> vars_of_expr e
+  | SubStr(e1,e2,e3) -> union (vars_of_expr e1) (union (vars_of_expr e2) (vars_of_expr e3))
+  | IntOfString e -> vars_of_expr e
 
 and vars_of_cmd1 = function
     SkipNF -> []
@@ -141,13 +151,15 @@ let rec toks_of_expr = function
 | AddrConst _
 | StringConst _ -> []
 | Map(_,e)
-| Not e -> toks_of_expr e
+| Not e 
+| Hash e -> toks_of_expr e
 | And(e1,e2) 
 | Or(e1,e2)  
 | Add(e1,e2) 
 | Sub(e1,e2) 
 | Mul(e1,e2) 
-| Div(e1,e2) 
+| Div(e1,e2)
+| Mod(e1,e2) 
 | Eq(e1,e2)  
 | Neq(e1,e2) 
 | Leq(e1,e2) 
@@ -160,6 +172,9 @@ let rec toks_of_expr = function
 | IfE(e1,e2,e3) -> union (toks_of_expr e1) (union (toks_of_expr e2) (toks_of_expr e3))
 | MapUpd(e1,e2,e3) -> union (toks_of_expr e1) (union (toks_of_expr e2) (toks_of_expr e3))
 | Expand(_,_) -> failwith "toks_of_expr: Expand should never happen"
+| StrLen e -> toks_of_expr e
+| SubStr(e1,e2,e3) -> union (toks_of_expr e1) (union (toks_of_expr e2) (toks_of_expr e3))
+| IntOfString e -> toks_of_expr e
 
 let rec toks_of_cmd1 = function
 | SkipNF -> []
@@ -193,12 +208,14 @@ let rec subst_var x e = function
 | AddrConst n -> AddrConst n
 | StringConst s -> StringConst s
 | Not e1 -> Not (subst_var x e e1)
+| Hash e1 -> Hash (subst_var x e e1)
 | And(e1,e2) -> And(subst_var x e e1,subst_var x e e2)
 | Or(e1,e2) -> Or(subst_var x e e1,subst_var x e e2)
 | Add(e1,e2) -> Add(subst_var x e e1,subst_var x e e2)
 | Sub(e1,e2) -> Sub(subst_var x e e1,subst_var x e e2)
 | Mul(e1,e2) -> Mul(subst_var x e e1,subst_var x e e2)
 | Div(e1,e2) -> Div(subst_var x e e1,subst_var x e e2)
+| Mod(e1,e2) -> Mod(subst_var x e e1,subst_var x e e2)
 | Eq(e1,e2) -> Eq(subst_var x e e1,subst_var x e e2)
 | Neq(e1,e2) -> Neq(subst_var x e e1,subst_var x e e2)
 | Leq(e1,e2) -> Leq(subst_var x e e1,subst_var x e e2)
@@ -211,9 +228,10 @@ let rec subst_var x e = function
 | IfE(e1,e2,e3) -> IfE(subst_var x e e1,subst_var x e e2,subst_var x e e3)
 | MapUpd(e1,e2,e3) -> MapUpd(subst_var x e e1,subst_var x e e2,subst_var x e e3)
 | Expand(f,el) -> Expand(f,List.map (subst_var x e) el)
+| StrLen e1 -> StrLen(subst_var x e e1)
+| SubStr(e1,e2,e3) -> SubStr(subst_var x e e1,subst_var x e e2,subst_var x e e3)
+| IntOfString e1 -> IntOfString(subst_var x e e1)
 
-(******************************************************************************)
-(*                      Substitute variable in command                        *)
 
 (******************************************************************************)
 (*                      Substitute balance in expression                      *)
@@ -225,12 +243,14 @@ let rec subst_bal t (e:expr) = function
 | Bal(t')    -> Bal(t')                  
 | Map(y,e')  -> Map(y,subst_bal t e e')
 | Not e1     -> Not(subst_bal t e e1)
+| Hash e1     -> Hash(subst_bal t e e1)
 | And(e1,e2) -> And(subst_bal t e e1,subst_bal t e e2)
 | Or(e1,e2)  -> Or (subst_bal t e e1,subst_bal t e e2)
 | Add(e1,e2) -> Add(subst_bal t e e1,subst_bal t e e2)
 | Sub(e1,e2) -> Sub(subst_bal t e e1,subst_bal t e e2)
 | Mul(e1,e2) -> Mul(subst_bal t e e1,subst_bal t e e2)
 | Div(e1,e2) -> Div(subst_bal t e e1,subst_bal t e e2)
+| Mod(e1,e2) -> Mod(subst_bal t e e1,subst_bal t e e2)
 | Eq(e1,e2)  -> Eq (subst_bal t e e1,subst_bal t e e2)
 | Neq(e1,e2) -> Neq(subst_bal t e e1,subst_bal t e e2)
 | Leq(e1,e2) -> Leq(subst_bal t e e1,subst_bal t e e2)
@@ -239,6 +259,9 @@ let rec subst_bal t (e:expr) = function
 | Ge(e1,e2)  -> Ge (subst_bal t e e1,subst_bal t e e2)
 | VerSig(e1,e2) -> VerSig(subst_bal t e e1,subst_bal t e e2)
 | Expand(f,_) -> failwith ("subst_bal: Expand " ^ f ^ " should never happen")
+| StrLen e1 -> StrLen(subst_bal t e e1)
+| SubStr(e1,e2,e3) -> SubStr(subst_bal t e e1,subst_bal t e e2,subst_bal t e e3)
+| IntOfString e1 -> IntOfString(subst_bal t e e1)
 | e -> e
 
 
@@ -262,12 +285,14 @@ let rec simsubst (af:ide -> expr) (e:expr) : expr = match e with
 | AddrConst n -> AddrConst n
 | StringConst s -> StringConst s
 | Not e1 -> Not (simsubst af e1)
+| Hash e1 -> Hash (simsubst af e1)
 | And(e1,e2) -> And(simsubst af e1,simsubst af e2)
 | Or(e1,e2) ->  Or (simsubst af e1,simsubst af e2)
 | Add(e1,e2) -> Add(simsubst af e1,simsubst af e2)
 | Sub(e1,e2) -> Sub(simsubst af e1,simsubst af e2)
 | Mul(e1,e2) -> Mul(simsubst af e1,simsubst af e2)
 | Div(e1,e2) -> Div(simsubst af e1,simsubst af e2)
+| Mod(e1,e2) -> Mod(simsubst af e1,simsubst af e2)
 | Eq(e1,e2) ->  Eq (simsubst af e1,simsubst af e2)
 | Neq(e1,e2) -> Neq(simsubst af e1,simsubst af e2)
 | Leq(e1,e2) -> Leq(simsubst af e1,simsubst af e2)
@@ -280,10 +305,6 @@ let rec simsubst (af:ide -> expr) (e:expr) : expr = match e with
 | IfE(e1,e2,e3)    -> IfE   (simsubst af e1,simsubst af e2,simsubst af e3)
 | MapUpd(e1,e2,e3) -> MapUpd(simsubst af e1,simsubst af e2,simsubst af e3)
 | Expand(_,_) -> failwith "simsubst: Expand should never happen"
-
-(******************************************************************************)
-(*                          Get functions in a contract                       *)
-(******************************************************************************)
-
-let get_fun _ _ = []
-(* List.map (fun n -> get_fun n contr) nl *)
+| StrLen e1 -> StrLen(simsubst af e1)
+| SubStr(e1,e2,e3) -> SubStr(simsubst af e1,simsubst af e2,simsubst af e3)
+| IntOfString e1 -> IntOfString(simsubst af e1)

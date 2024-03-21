@@ -37,7 +37,7 @@ def main(folder_path, extension):
             csv_writer.writerow([formatted_file_name, hll_size[0], hll_size[1], ill_size[0], ill_size[1]])
 
 if __name__ == "__main__":
-    folder_path = "test"
+    folder_path = "test/benchmark"
     extension = ".hll"
 
     main(folder_path, extension)

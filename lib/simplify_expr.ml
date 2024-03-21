@@ -20,7 +20,8 @@ let rec simplify_expr1 = function
   | Leq(e1,e2) -> Ge(e1,e2)
   | Le(e1,e2) -> Geq(e1,e2)
   | e' -> Not e')
-| And(e1,e2) -> (match simplify_expr1 e1, simplify_expr1 e2 with
+| Hash e -> Hash(simplify_expr1 e)
+  | And(e1,e2) -> (match simplify_expr1 e1, simplify_expr1 e2 with
   | True,e2' -> e2'
   | False,_ -> False
   | e1',True -> e1'
@@ -51,6 +52,9 @@ let rec simplify_expr1 = function
 | Div(e1,e2) -> (match simplify_expr1 e1, simplify_expr1 e2 with
   | IntConst n1,IntConst n2 -> IntConst (n1/n2)
   | e1',e2' -> Div(e1',e2'))
+| Mod(e1,e2) -> (match simplify_expr1 e1, simplify_expr1 e2 with
+  | IntConst n1,IntConst n2 -> IntConst (n1 mod n2)
+  | e1',e2' -> Mod(e1',e2'))
 | Eq(e1,e2) -> (match simplify_expr1 e1, simplify_expr1 e2 with
   | IntConst n1,IntConst n2 -> if n1=n2 then True else False
   | e1',e2' -> Eq(e1',e2'))
@@ -78,6 +82,9 @@ let rec simplify_expr1 = function
 | MapUpd(e1,e2,e3) -> MapUpd(simplify_expr1 e1,simplify_expr1 e2,simplify_expr1 e3)
 | VerSig(e1,e2) -> VerSig(simplify_expr1 e1,simplify_expr1 e2)
 | Expand(_,_) -> failwith "simplify_expr1: Expand should never happen"
+| StrLen e -> StrLen(simplify_expr1 e)
+| SubStr(e1,e2,e3) -> SubStr(simplify_expr1 e1,simplify_expr1 e2,simplify_expr1 e3)
+| IntOfString(e) -> IntOfString(simplify_expr1 e)
 
 let rec simplify_expr e = 
   let e' = simplify_expr1 e in

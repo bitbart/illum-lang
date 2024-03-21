@@ -1,4 +1,5 @@
 open Ast
+open String
 
 (******************************************************************************)
 (*                             Types for HeLLUM semantics                     *)
@@ -85,6 +86,11 @@ let bind_loc_vars r al = List.fold_left
 
 exception TypeError of string
 
+let sha256_string str =
+  let open Digestif.SHA256 in
+  let hash = digest_string str in
+  let hex_hash = to_hex hash in
+  hex_hash
 
 let rec sem_expr (st:cstate) env = function
     True -> VBase (VBool true)
@@ -99,7 +105,10 @@ let rec sem_expr (st:cstate) env = function
   | Not e -> (match sem_expr st env e with
       VBase (VBool b) -> VBase (VBool (not b))
     | _ -> raise (TypeError "Not"))
-  | And(e1,e2) -> (match (sem_expr st env e1,sem_expr st env e2)  with
+  | Hash e -> (match sem_expr st env e with
+      VBase (VString s) -> VBase (VString (sha256_string s))
+    | _ -> raise (TypeError "Hash"))
+    | And(e1,e2) -> (match (sem_expr st env e1,sem_expr st env e2)  with
     | (VBase (VBool v1),VBase (VBool v2)) -> VBase(VBool(v1 && v2))
     | _ -> raise (TypeError "And"))
   | Or(e1,e2) -> (match (sem_expr st env e1,sem_expr st env e2)  with
@@ -117,6 +126,9 @@ let rec sem_expr (st:cstate) env = function
   | Div(e1,e2) -> (match (sem_expr st env e1,sem_expr st env e2)  with
     | (VBase (VInt v1),VBase (VInt v2)) -> VBase(VInt(v1 / v2))
     | _ -> raise (TypeError "Div"))
+  | Mod(e1,e2) -> (match (sem_expr st env e1,sem_expr st env e2)  with
+    | (VBase (VInt v1),VBase (VInt v2)) -> VBase(VInt(v1 mod v2))
+    | _ -> raise (TypeError "Mod"))    
   | Eq(e1,e2) -> (match (sem_expr st env e1,sem_expr st env e2)  with
     | (VBase v1,VBase v2) -> VBase(VBool(v1 = v2))
     | _ -> raise (TypeError "Eq"))
@@ -144,7 +156,15 @@ let rec sem_expr (st:cstate) env = function
   | MapUpd(_,_,_) -> failwith "sem_expr: mapupd not implemented"
   | VerSig(_,_) -> failwith "sem_expr: versig not implemented"
   | Expand(_,_) -> failwith "sem_expr: Expand cannot happen"
-
+  | StrLen e -> (match sem_expr st env e with
+    | VBase (VString s) -> VBase (VInt (String.length s))
+    | _ -> raise (TypeError "StrLen"))
+  | SubStr(e1,e2,e3) -> (match sem_expr st env e1,sem_expr st env e2,sem_expr st env e3 with
+    | VBase (VString s), VBase (VInt pos), VBase (VInt len) -> VBase (VString (sub s pos len))
+    | _ -> raise (TypeError "Substr"))
+  | IntOfString(e) -> (match sem_expr st env e with
+    | VBase (VString s) -> VBase (VInt (int_of_string s))
+    | _ -> raise (TypeError "IntOfString"))
 
 (******************************************************************************)
 (*                              Semantics of commands                         *)

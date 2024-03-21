@@ -9,7 +9,8 @@ open Ast
 %token OR
 %token PLUS PLUSTAKES
 %token MINUS MINUSTAKES
-%token MUL DIV
+%token MUL DIV MOD
+%token HASH STRLEN SUBSTR INTOFSTRING
 %token EQ NEQ LEQ LE GEQ GE
 %token BALANCE
 %token <string> ID
@@ -89,12 +90,18 @@ expr:
   | e1=expr; MINUS; e2=expr { Sub(e1,e2) }
   | e1=expr; MUL; e2=expr { Mul(e1,e2) }
   | e1=expr; DIV; e2=expr { Div(e1,e2) } 
+  | e1=expr; MOD; e2=expr { Mod(e1,e2) }
   | e1=expr; EQ; e2=expr { Eq(e1,e2) }
   | e1=expr; NEQ; e2=expr { Neq(e1,e2) }
   | e1=expr; LEQ; e2=expr { Leq(e1,e2) }
   | e1=expr; LE; e2=expr { Le(e1,e2) }
   | e1=expr; GEQ; e2=expr { Geq(e1,e2) }
   | e1=expr; GE; e2=expr { Ge(e1,e2) }
+  | HASH; LPAREN; e = expr; RPAREN { Hash(e) }
+  | SUBSTR; LPAREN; e1 = expr; ARGSEP; e2 = expr; ARGSEP; e3 = expr; RPAREN { SubStr(e1,e2,e3) }
+  | INTOFSTRING; LPAREN; e = expr; RPAREN { IntOfString(e) }
+  | HASH; LPAREN; e = expr; RPAREN { Hash(e) }
+  | STRLEN; LPAREN; e = expr; RPAREN { StrLen(e) }
   | LPAREN; e1=expr; RPAREN; QMARK; e2=expr; TOKSEP; e3=expr; { IfE(e1,e2,e3) }
   | x = ID { Var(x) }
   | e1 = expr; LBRACKET; e2 = expr; RBRACKET; { Map(e1,e2) }
