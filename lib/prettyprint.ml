@@ -1,5 +1,6 @@
 open Ast
 open Utils
+open Sem_hellum
 
 (******************************************************************************)
 (*                             Pretty printing of AST                         *)
@@ -169,7 +170,6 @@ let string_of_fun_declsNF = List.fold_left
 let string_of_contractNF = function ContractNF(c,vdl,fdl) -> 
   "contract " ^ c ^ " {\n" ^ (string_of_var_declsNF 0 vdl) ^ (string_of_fun_declsNF fdl) ^ "\n}"
 
-
 (******************************************************************************)
 (*                        Pretty-printing ILLUM clauses                       *)
 (******************************************************************************)
@@ -234,48 +234,15 @@ let string_of_clause (c:clause) =
 (*                        Pretty-printing HeLLUM semantics                    *)
 (******************************************************************************)
 
-(*
-open Sem_hellum
+let string_of_envval1 = function
+  | VInt n -> string_of_int n
+  | VAddress s -> "address(" ^ s ^ ")"
+  | VString s -> "\"" ^ s ^ "\""
+  | VBool b -> string_of_bool b
 
-let string_of_env1 s x = match topenv s x with
-  | IVar l -> string_of_int l ^ "/" ^ x
-  | IProc(a,c) -> "fun(" ^ string_of_args a ^ "){" ^ string_of_cmd 1 c ^ "}/" ^ x
+let string_of_envval = function
+  | VBase v -> string_of_envval1 v
+  | VMap _ -> "[map]"
 
-let rec string_of_env s = function
-    [] -> ""
-  | [x] -> (try string_of_env1 s x with _ -> "")
-  | x::dom' -> (try string_of_env1 s x ^ "," ^ string_of_env s dom'
-                with _ -> string_of_env s dom')
-
-let string_of_mem1 (m,l) i =
-  assert (i<l);
-  string_of_val (m i) ^ "/" ^ string_of_int i
-
-let rec range a b = if b<a then [] else a::(range (a+1) b);;
-
-let string_of_mem (m,l) =
-  List.fold_left (fun str i -> str ^ (try string_of_mem1 (m,l) i ^ "," with _ -> "")) "" (range 0 (l - 1))
-
-let rec getlocs e = function
-    [] -> []
-  | x::dom -> try (match e x with
-    | IVar l -> l::(getlocs e dom)
-    | IProc(_,_) -> [])
-    with _ -> getlocs e dom
-
-let string_of_state st dom =
-  "[" ^ string_of_env st dom ^ "], " ^
-  "[" ^ string_of_mem (getmem st,getloc st) ^ "]" ^ ", " ^
-  string_of_int (getloc st)
-
-
-let string_of_conf vars = function
-    St st -> string_of_state st vars
-  | Cmd(c,st) -> "<" ^ string_of_cmd 0 c ^ ", " ^ string_of_state st vars ^ ">"
-
-let rec string_of_trace vars = function
-    [] -> ""
-  | [x] -> (string_of_conf vars x)
-  | x::l -> (string_of_conf vars x) ^ "\n -> " ^ string_of_trace vars l
-
-*)
+let string_of_env env =
+  List.fold_left (fun s (x,v) -> s ^ (if s<>"" then "," else "") ^ x ^ "=" ^ string_of_envval v) "" env

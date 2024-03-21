@@ -19,8 +19,6 @@ type transaction = {
   timestamp: int;                       (* timestamp *) 
 }
 
-(* FIXME: tx to increase block number*)
-
 type wallet = (tok * int) list
 
 type cstate = {                         (* contract state *)
@@ -66,7 +64,7 @@ let default_val_btype = function
   | TUint -> VInt 0
   | TString -> VString ""
   | TBool -> VBool false
-  | TAddr -> VAddress ""  (* FIXME: address string or int? *)
+  | TAddr -> VAddress ""  (* FIXME?: address string or int? *)
 
 let default_val_hlltype = function
   | TBase ty -> VBase(default_val_btype ty)
@@ -174,7 +172,7 @@ let rec sem_cmd1 bcst env = function
   | SkipNF -> bcst,env
   | VarAssignNF(x,e) -> 
       let v = sem_expr bcst.cst env e in 
-      bind_bcstate bcst x v, env (* FIXME: x in parameter or local *)
+      bind_bcstate bcst x v, env (* FIXME?: x in parameter or local *)
   | XferNF(x,e,t) ->
       let cbal = bcst.cst.balance in
       (match sem_expr bcst.cst env e with 
@@ -246,7 +244,7 @@ let init_cstate = function
 
 let trace1 bcst tx contr = 
   try sem_contr bcst tx contr 
-  with _ -> bcst                (* invalid transactions are ignored *)
+  with _ -> bcst                (* invalid transactions are correctly ignored *)
 
 let trace n bcst txl = 
   List.fold_left (fun st tx -> trace1 st tx n) bcst txl
