@@ -41,18 +41,18 @@ contract Auction {
 ## HeLLUM contracts
 
 The repository includes a benchmark of common Solidity smart contracts, implemented in HeLLUM:
-- [Crowdfund](test/crowdfund.hll)
-- [Auction](test/auction.hll)
-- [Payment splitter](test/payment_splitter.hll)
-- [Vault](test/vault.hll)
-- [Automated Market Maker](test/amm.hll)
-- [Voting](test/voting.hll)
-- [Vesting wallet](test/vesting_wallet.hll)
-- [Escrow](test/escrow.hll)
-- [King of the Hill](test/king_of_the_hill.hll)
-- [Blind auction](test/blind_auction.hll)
-- [Lending pool](test/lending_pool.hll)
-- [Lottery](test/lottery.hll)
+- [Crowdfund](test/benchmark/crowdfund.hll)
+- [Auction](test/benchmark/auction.hll)
+- [Payment splitter](test/benchmark/payment_splitter.hll)
+- [Vault](test/benchmark/vault.hll)
+- [Automated Market Maker](test/benchmark/amm.hll)
+- [Voting](test/benchmark/voting.hll)
+- [Vesting wallet](test/benchmark/vesting_wallet.hll)
+- [Escrow](test/benchmark/escrow.hll)
+- [King of the Hill](test/benchmark/king_of_the_hill.hll)
+- [Blind auction](test/benchmark/blind_auction.hll)
+- [Lending pool](test/benchmark/lending_pool.hll)
+- [Lottery](test/benchmark/lottery.hll)
 
 ## Installation and setup
 
