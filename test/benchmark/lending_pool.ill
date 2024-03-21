@@ -1,0 +1,132 @@
+clause constructor_run(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; c,r,m,o) {
+  precond_wallet: bal_T:T
+  precond_if: r>1 && m>1
+  process: 
+    call constructor_next(c,r,1,m,0,0,o,debt,mint,bal_T)
+}
+clause constructor_next(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call deposit(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call borrow(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    auth(oracle) : call accrue(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call repay(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call redeem(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call liquidate(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+}
+clause deposit_run(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; sender,x) {
+  precond_wallet: bal_T+x:T
+  precond_if: true
+  process: 
+    call deposit_next(Cmin,Rliq,Ir,Imul,D,M+(x/((M==0 ? 1 : ((bal_T-x)+(D*Ir))/M))),oracle,debt,mint[sender->(mint[sender])+(x/((M==0 ? 1 : ((bal_T-x)+(D*Ir))/M)))],bal_T+x)
+}
+clause deposit_next(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call deposit(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call borrow(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    auth(oracle) : call accrue(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call repay(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call redeem(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call liquidate(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+}
+clause borrow_run(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; sender,x,sig_sender) {
+  precond_wallet: bal_T:T
+  precond_if: (bal_T>x && (((mint[sender])*((M==0 ? 1 : (bal_T+((D+(x/Ir))*Ir))/M)))/((debt[sender->(debt[sender])+(x/Ir)][sender])*Ir)>=Cmin)) && versig(sender,sig_sender)
+  process: 
+    call( Pay(sender,x,T) | borrow_next(Cmin,Rliq,Ir,Imul,D+(x/Ir),M,oracle,debt[sender->(debt[sender])+(x/Ir)],mint,bal_T-x) )
+}
+clause borrow_next(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call deposit(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call borrow(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    auth(oracle) : call accrue(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call repay(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call redeem(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call liquidate(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+}
+clause accrue_run(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call accrue_next(Cmin,Rliq,Ir*Imul,Imul,D,M,oracle,debt,mint,bal_T)
+}
+clause accrue_next(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call deposit(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call borrow(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    auth(oracle) : call accrue(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call repay(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call redeem(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call liquidate(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+}
+clause repay_run(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; sender,x) {
+  precond_wallet: bal_T+x:T
+  precond_if: (debt[sender])*Ir>=x
+  process: 
+    call repay_next(Cmin,Rliq,Ir,Imul,D,M,oracle,debt[sender->(debt[sender])-(x/Ir)],mint,bal_T+x)
+}
+clause repay_next(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call deposit(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call borrow(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    auth(oracle) : call accrue(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call repay(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call redeem(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call liquidate(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+}
+clause redeem_run(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; sender,x,sig_sender) {
+  precond_wallet: bal_T:T
+  precond_if: (((mint[sender]>=x) && (bal_T>=x*bal_T)) && (((mint[sender->(mint[sender])-x][sender])*((M-x==0 ? 1 : (bal_T+(D*Ir))/(M-x))))/((debt[sender])*Ir)>=Cmin)) && versig(sender,sig_sender)
+  process: 
+    call( Pay(sender,x*bal_T,T) | redeem_next(Cmin,Rliq,Ir,Imul,D,M-x,oracle,debt,mint[sender->(mint[sender])-x],bal_T-(x*bal_T)) )
+}
+clause redeem_next(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call deposit(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call borrow(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    auth(oracle) : call accrue(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call repay(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call redeem(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call liquidate(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+}
+clause liquidate_run(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; sender,x,b,sig_sender) {
+  precond_wallet: bal_T+x:T
+  precond_if: (((((debt[b])*Ir>x) && (((mint[b])*((M==0 ? 1 : (bal_T+(D*Ir))/M)))/((debt[b])*Ir)<Cmin)) && (mint[b]>=(x/((M==0 ? 1 : (bal_T+(D*Ir))/M)))*Rliq)) && (((mint[sender->(mint[sender])+((x/((M==0 ? 1 : (bal_T+(D*Ir))/M)))*Rliq)][b->(mint[sender->(mint[sender])+((x/((M==0 ? 1 : (bal_T+(D*Ir))/M)))*Rliq)][b])-((x/((M==0 ? 1 : (bal_T+(D*Ir))/M)))*Rliq)][b])*((M==0 ? 1 : ((bal_T+x)+((D-(x/Ir))*Ir))/M)))/((debt[b->(debt[b])-(x/Ir)][b])*Ir)<=Cmin)) && versig(sender,sig_sender)
+  process: 
+    call liquidate_next(Cmin,Rliq,Ir,Imul,D-(x/Ir),M,oracle,debt[b->(debt[b])-(x/Ir)],mint[sender->(mint[sender])+((x/((M==0 ? 1 : ((bal_T-x)+(D*Ir))/M)))*Rliq)][b->(mint[sender->(mint[sender])+((x/((M==0 ? 1 : ((bal_T-x)+(D*Ir))/M)))*Rliq)][b])-((x/((M==0 ? 1 : ((bal_T-x)+(D*Ir))/M)))*Rliq)],bal_T+x)
+}
+clause liquidate_next(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call deposit(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call borrow(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    auth(oracle) : call accrue(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call repay(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call redeem(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+    call liquidate(Cmin,Rliq,Ir,Imul,D,M,oracle,debt,mint,bal_T)
+}
+clause Pay(a,v,t; ) {
+  precond_wallet: v:t
+  precond_if: true
+  process: 
+    send(v:t -> a)
+}
+clause Check(b; ) {
+  precond_wallet: 
+  precond_if: b
+  process: 
+    send()
+}
+

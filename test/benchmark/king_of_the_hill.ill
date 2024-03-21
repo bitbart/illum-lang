@@ -1,0 +1,69 @@
+clause constructor_run(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T; a,cf,df,r,d,k,to,sig_a) {
+  precond_wallet: bal_T:T
+  precond_if: versig(a,sig_a)
+  process: 
+    call constructor_next(d,r,df,cf,cf,curse_start,a,a,k,to,curr_time,bal_T)
+}
+clause constructor_next(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(time_oracle) : call set_time(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T)
+    call crown(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T)
+    call dethrone(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T)
+}
+clause set_time_run(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T; time) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call set_time_next(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,time,bal_T)
+}
+clause set_time_next(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(time_oracle) : call set_time(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T)
+    call crown(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T)
+    call dethrone(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T)
+}
+clause crown_run(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T; a,k,sig_a) {
+  precond_wallet: bal_T+x:T
+  precond_if: (curr_time>=curse_start+curse_duration) && versig(a,sig_a)
+  process: 
+    call( Pay(owner,crown_fee,T) | crown_next(curse_duration,rate_percent,dethrone_fee,crown_fee,(crown_fee*rate_percent)/100,curr_time,owner,a,k,time_oracle,curr_time,(bal_T+x)-crown_fee) )
+}
+clause crown_next(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(time_oracle) : call set_time(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T)
+    call crown(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T)
+    call dethrone(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T)
+}
+clause dethrone_run(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T; a,k,sig_a) {
+  precond_wallet: bal_T:T
+  precond_if: (curr_time<=curse_start+curse_duration) && versig(a,sig_a)
+  process: 
+    call( Pay(monarch,claim_price,T) | Pay(owner,dethrone_fee,T) | dethrone_next(curse_duration,rate_percent,dethrone_fee,crown_fee,(claim_price*rate_percent)/100,curr_time,owner,a,k,time_oracle,curr_time,(bal_T-dethrone_fee)-claim_price) )
+}
+clause dethrone_next(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(time_oracle) : call set_time(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T)
+    call crown(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T)
+    call dethrone(curse_duration,rate_percent,dethrone_fee,crown_fee,claim_price,curse_start,owner,monarch,king_name,time_oracle,curr_time,bal_T)
+}
+clause Pay(a,v,t; ) {
+  precond_wallet: v:t
+  precond_if: true
+  process: 
+    send(v:t -> a)
+}
+clause Check(b; ) {
+  precond_wallet: 
+  precond_if: b
+  process: 
+    send()
+}
+

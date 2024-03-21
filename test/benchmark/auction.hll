@@ -1,0 +1,31 @@
+contract Auction {
+    uint deadline;
+    uint min_bid;
+    address winner;  
+    address seller;
+
+    constructor(address a, uint d, uint m) {
+        seller = a;
+        deadline = d;
+        min_bid = m;
+    }
+    
+    function bid(uint v, address a) input(v:T) {
+        require v >= min_bid;
+        require v > balance(T);     // the current bid is greater than the previous ones 
+        require a != address(0);
+        
+        // the previous maximum bid is returned to the previous winner
+        winner.transfer((balance(T)-v):T);
+        
+        // the new winner is set to the current (highest) bidder
+        winner = a;
+    }
+        
+    function close()
+        auth(seller) 
+        after(deadline) 
+    {
+        seller.transfer(balance(T):T);
+    }
+}

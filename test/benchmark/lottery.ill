@@ -1,0 +1,136 @@
+clause constructor_run(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; tc,tr) {
+  precond_wallet: bal_T:T
+  precond_if: tc<tr
+  process: 
+    call constructor_next(player1,player2,tc,tr,commitment1,commitment2,secret1,secret2,bal_T)
+}
+clause constructor_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call join1(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T)
+}
+clause join1_run(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; a,h) {
+  precond_wallet: bal_T+1:T
+  precond_if: true
+  process: 
+    call join1_next(a,player2,end_commit,end_reveal,h,commitment2,secret1,secret2,bal_T+1)
+}
+clause join1_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call join2(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T)
+    afterAbs(end_commit) : call redeem1_nojoin(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T)
+}
+clause join2_run(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; a,h) {
+  precond_wallet: bal_T+1:T
+  precond_if: h!=commitment1
+  process: 
+    call join2_next(player1,a,end_commit,end_reveal,commitment1,h,secret1,secret2,bal_T+1)
+}
+clause join2_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    afterAbs(end_commit) : call reveal1(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T)
+}
+clause redeem1_nojoin_run(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call( Pay(player1,bal_T,T) | redeem1_nojoin_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,0) )
+}
+clause redeem1_nojoin_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    afterAbs(end_commit) : call end(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T)
+}
+clause reveal1_run(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; s) {
+  precond_wallet: bal_T:T
+  precond_if: sha256(s)==commitment1
+  process: 
+    call reveal1_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,s,secret2,bal_T)
+}
+clause reveal1_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    afterAbs(end_reveal+100) : call reveal2(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T)
+    afterAbs(end_reveal) : call redeem2_noreveal(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T)
+}
+clause reveal2_run(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; s) {
+  precond_wallet: bal_T:T
+  precond_if: sha256(s)==commitment2
+  process: 
+    call reveal2_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,s,bal_T)
+}
+clause reveal2_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call win(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T)
+}
+clause redeem2_noreveal_run(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call( Pay(player2,bal_T,T) | redeem2_noreveal_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,0) )
+}
+clause redeem2_noreveal_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    afterAbs(end_commit) : call end(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T)
+}
+clause redeem1_noreveal_run(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call( Pay(player1,bal_T,T) | redeem1_noreveal_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,0) )
+}
+clause redeem1_noreveal_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    afterAbs(end_commit) : call end(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T)
+}
+clause win_run(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call( Check(((length(secret1))+(length(secret2)))%false) | Pay(player1,bal_T,T) | win_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,0) )
+    call( Check(!(((length(secret1))+(length(secret2)))%false)) | Pay(player2,bal_T,T) | win_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,0) )
+}
+clause win_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    afterAbs(end_commit) : call end(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T)
+}
+clause end_run(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call end_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T)
+}
+clause end_next(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    afterAbs(end_commit) : call end(player1,player2,end_commit,end_reveal,commitment1,commitment2,secret1,secret2,bal_T)
+}
+clause Pay(a,v,t; ) {
+  precond_wallet: v:t
+  precond_if: true
+  process: 
+    send(v:t -> a)
+}
+clause Check(b; ) {
+  precond_wallet: 
+  precond_if: b
+  process: 
+    send()
+}
+

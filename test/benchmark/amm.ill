@@ -1,0 +1,88 @@
+clause constructor_run(m_supply,bal_M01,bal_T0,bal_T1; x0,x1,m) {
+  precond_wallet: bal_M01+m:M01,bal_T0+x0:T0,bal_T1+x1:T1
+  precond_if: (x0>0 && x1>0) && m>0
+  process: 
+    call constructor_next(m,bal_M01+m,bal_T0+x0,bal_T1+x1)
+}
+clause constructor_next(m_supply,bal_M01,bal_T0,bal_T1; ) {
+  precond_wallet: bal_M01:M01,bal_T0:T0,bal_T1:T1
+  precond_if: true
+  process: 
+    call addLiquidity(m_supply,bal_M01,bal_T0,bal_T1)
+    call removeLiquidity(m_supply,bal_M01,bal_T0,bal_T1)
+    call swap0(m_supply,bal_M01,bal_T0,bal_T1)
+    call swap1(m_supply,bal_M01,bal_T0,bal_T1)
+}
+clause addLiquidity_run(m_supply,bal_M01,bal_T0,bal_T1; x0,x1) {
+  precond_wallet: bal_M01:M01,bal_T0+x0:T0,bal_T1+x1:T1
+  precond_if: (bal_T0+x0)*bal_T1==bal_T0*(bal_T1+x1)
+  process: 
+    call( Pay(a_0,(x0*(m_supply-bal_M01))/((bal_T0+x0)-x0),M01) | addLiquidity_next(m_supply,bal_M01-((x0*(m_supply-bal_M01))/bal_T0),bal_T0+x0,bal_T1+x1) )
+}
+clause addLiquidity_next(m_supply,bal_M01,bal_T0,bal_T1; ) {
+  precond_wallet: bal_M01:M01,bal_T0:T0,bal_T1:T1
+  precond_if: true
+  process: 
+    call addLiquidity(m_supply,bal_M01,bal_T0,bal_T1)
+    call removeLiquidity(m_supply,bal_M01,bal_T0,bal_T1)
+    call swap0(m_supply,bal_M01,bal_T0,bal_T1)
+    call swap1(m_supply,bal_M01,bal_T0,bal_T1)
+}
+clause removeLiquidity_run(m_supply,bal_M01,bal_T0,bal_T1; a,m) {
+  precond_wallet: bal_M01+m:M01,bal_T0:T0,bal_T1:T1
+  precond_if: ((m*bal_T0)/((m_supply-(bal_M01+m))+m)<bal_T0) && ((m*bal_T1)/((m_supply-(bal_M01+m))+m)<bal_T1)
+  process: 
+    call( Pay(a,(m*bal_T1)/((m_supply-(bal_M01+m))+m),T1) | Pay(a,(m*bal_T0)/((m_supply-(bal_M01+m))+m),T0) | removeLiquidity_next(m_supply,bal_M01+m,bal_T0-((m*bal_T0)/((m_supply-(bal_M01+m))+m)),bal_T1-((m*bal_T1)/((m_supply-(bal_M01+m))+m))) )
+}
+clause removeLiquidity_next(m_supply,bal_M01,bal_T0,bal_T1; ) {
+  precond_wallet: bal_M01:M01,bal_T0:T0,bal_T1:T1
+  precond_if: true
+  process: 
+    call addLiquidity(m_supply,bal_M01,bal_T0,bal_T1)
+    call removeLiquidity(m_supply,bal_M01,bal_T0,bal_T1)
+    call swap0(m_supply,bal_M01,bal_T0,bal_T1)
+    call swap1(m_supply,bal_M01,bal_T0,bal_T1)
+}
+clause swap0_run(m_supply,bal_M01,bal_T0,bal_T1; x,a,min_t1_out) {
+  precond_wallet: bal_M01:M01,bal_T0+x:T0,bal_T1:T1
+  precond_if: (bal_T1>(x*bal_T1)/(bal_T0+x)) && ((x*bal_T1)/(bal_T0+x)>=min_t1_out)
+  process: 
+    call( Pay(a,(x*bal_T1)/(bal_T0+x),T1) | swap0_next(m_supply,bal_M01,bal_T0+x,bal_T1-((x*bal_T1)/(bal_T0+x))) )
+}
+clause swap0_next(m_supply,bal_M01,bal_T0,bal_T1; ) {
+  precond_wallet: bal_M01:M01,bal_T0:T0,bal_T1:T1
+  precond_if: true
+  process: 
+    call addLiquidity(m_supply,bal_M01,bal_T0,bal_T1)
+    call removeLiquidity(m_supply,bal_M01,bal_T0,bal_T1)
+    call swap0(m_supply,bal_M01,bal_T0,bal_T1)
+    call swap1(m_supply,bal_M01,bal_T0,bal_T1)
+}
+clause swap1_run(m_supply,bal_M01,bal_T0,bal_T1; x,a,min_t0_out) {
+  precond_wallet: bal_M01:M01,bal_T0:T0,bal_T1+x:T1
+  precond_if: (bal_T0>(x*bal_T0)/(bal_T1+x)) && ((x*bal_T0)/(bal_T1+x)>=min_t0_out)
+  process: 
+    call( Pay(a,(x*bal_T0)/(bal_T1+x),T0) | swap1_next(m_supply,bal_M01,bal_T0-((x*bal_T0)/(bal_T1+x)),bal_T1+x) )
+}
+clause swap1_next(m_supply,bal_M01,bal_T0,bal_T1; ) {
+  precond_wallet: bal_M01:M01,bal_T0:T0,bal_T1:T1
+  precond_if: true
+  process: 
+    call addLiquidity(m_supply,bal_M01,bal_T0,bal_T1)
+    call removeLiquidity(m_supply,bal_M01,bal_T0,bal_T1)
+    call swap0(m_supply,bal_M01,bal_T0,bal_T1)
+    call swap1(m_supply,bal_M01,bal_T0,bal_T1)
+}
+clause Pay(a,v,t; ) {
+  precond_wallet: v:t
+  precond_if: true
+  process: 
+    send(v:t -> a)
+}
+clause Check(b; ) {
+  precond_wallet: 
+  precond_if: b
+  process: 
+    send()
+}
+

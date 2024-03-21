@@ -1,0 +1,69 @@
+clause constructor_run(released,beneficiary,start,duration,timestamp_reserve,bal_T; b,t,d) {
+  precond_wallet: bal_T:T
+  precond_if: b!=address(0) && d>0
+  process: 
+    call constructor_next(released,b,t,d,timestamp_reserve,bal_T)
+}
+clause constructor_next(released,beneficiary,start,duration,timestamp_reserve,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call receive(released,beneficiary,start,duration,timestamp_reserve,bal_T)
+    call reserve(released,beneficiary,start,duration,timestamp_reserve,bal_T)
+    afterAbs(timestamp_reserve) : call release(released,beneficiary,start,duration,timestamp_reserve,bal_T)
+}
+clause receive_run(released,beneficiary,start,duration,timestamp_reserve,bal_T; x) {
+  precond_wallet: bal_T+x:T
+  precond_if: true
+  process: 
+    call receive_next(released,beneficiary,start,duration,timestamp_reserve,bal_T+x)
+}
+clause receive_next(released,beneficiary,start,duration,timestamp_reserve,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call receive(released,beneficiary,start,duration,timestamp_reserve,bal_T)
+    call reserve(released,beneficiary,start,duration,timestamp_reserve,bal_T)
+    afterAbs(timestamp_reserve) : call release(released,beneficiary,start,duration,timestamp_reserve,bal_T)
+}
+clause reserve_run(released,beneficiary,start,duration,timestamp_reserve,bal_T; timestamp) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call reserve_next(released,beneficiary,start,duration,timestamp,bal_T)
+}
+clause reserve_next(released,beneficiary,start,duration,timestamp_reserve,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call receive(released,beneficiary,start,duration,timestamp_reserve,bal_T)
+    call reserve(released,beneficiary,start,duration,timestamp_reserve,bal_T)
+    afterAbs(timestamp_reserve) : call release(released,beneficiary,start,duration,timestamp_reserve,bal_T)
+}
+clause release_run(released,beneficiary,start,duration,timestamp_reserve,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: ((timestamp_reserve<start ? 0 : (timestamp_reserve>start+duration ? bal_T+released : ((bal_T+released)*(timestamp_reserve-start))/duration)))-released>0
+  process: 
+    call( Pay(beneficiary,((timestamp_reserve<start ? 0 : (timestamp_reserve>start+duration ? bal_T+released : ((bal_T+released)*(timestamp_reserve-start))/duration)))-released,T) | release_next(released+(((timestamp_reserve<start ? 0 : (timestamp_reserve>start+duration ? bal_T+released : ((bal_T+released)*(timestamp_reserve-start))/duration)))-released),beneficiary,start,duration,timestamp_reserve,bal_T-(((timestamp_reserve<start ? 0 : (timestamp_reserve>start+duration ? bal_T+released : ((bal_T+released)*(timestamp_reserve-start))/duration)))-released)) )
+}
+clause release_next(released,beneficiary,start,duration,timestamp_reserve,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call receive(released,beneficiary,start,duration,timestamp_reserve,bal_T)
+    call reserve(released,beneficiary,start,duration,timestamp_reserve,bal_T)
+    afterAbs(timestamp_reserve) : call release(released,beneficiary,start,duration,timestamp_reserve,bal_T)
+}
+clause Pay(a,v,t; ) {
+  precond_wallet: v:t
+  precond_if: true
+  process: 
+    send(v:t -> a)
+}
+clause Check(b; ) {
+  precond_wallet: 
+  precond_if: b
+  process: 
+    send()
+}
+

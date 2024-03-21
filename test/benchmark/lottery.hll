@@ -1,0 +1,78 @@
+contract Lottery {
+    address player1;
+    address player2;
+    int end_commit;		// last round to join
+    int end_reveal;		// last round to reveal
+    string commitment1;
+    string commitment2;
+    string secret1;
+    string secret2;
+
+    constructor(int tc, int tr) {
+        require tc < tr;
+        end_commit = tc;
+        end_reveal = tr;
+    } next(join1)
+
+    function join1(address a, string h) input(1:T) {
+        player1 = a;
+        commitment1 = h;
+    } next(join2,redeem1_nojoin)
+
+    function join2(address a, string h) input(1:T) {
+        require h != commitment1;
+        player2 = a;
+        commitment2 = h;
+    } next(reveal1)
+
+    // if, after the commit deadline, the second player has not joined,
+    // then player1 can redeem the bet 
+    function redeem1_nojoin() after(end_commit) {
+        player1.transfer(balance(T):T);
+    } next(end)
+
+    // player1 must reveal first
+    function reveal1(string s) after(end_commit) {
+        require sha256(s) == commitment1;
+        secret1 = s;
+    } next(reveal2,redeem2_noreveal)
+
+    // player2 must reveal after player1
+    // the deadline extension +100 is needed to avoid attacks where 
+    // player1 reveals close to the deadline, 
+
+    function reveal2(string s) after(end_reveal+100) {
+        require sha256(s) == commitment2;
+        secret2 = s;
+    } next(win)
+
+    // if player1 has not revealed, player2 can redeem the pot
+    function redeem2_noreveal() after(end_reveal) {
+        player2.transfer(balance(T):T);
+    } next(end)
+
+    // if player2 has not revealed, player1 can redeem the pot
+    function redeem1_noreveal() after(end_reveal+100) {
+       player1.transfer(balance(T):T);
+    } next(end)
+
+    // player1 wins the lottery
+    function win() {
+        if ((length(secret1) + length(secret2)) % 2 == 0) {
+            player1.transfer(balance(T):T);
+        }
+        else {
+            player2.transfer(balance(T):T);
+        }
+    } next(end)
+
+    // terminate contract
+    function end() after(end_commit) {
+    } next(end)
+
+    // if no one reveals, then 2:T are frozen in the contract.
+    // This is not a problem, since we assume that a rational player
+    // will always reveal.
+    // If desired, we can unfreeze the 2:T by allowing both players
+    // to redeem 1:T after some time
+}

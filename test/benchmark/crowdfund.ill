@@ -1,0 +1,64 @@
+clause constructor_run(deadline,target,owner,min_donation,funds,bal_T; d,t,o,m) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call constructor_next(d,t,o,m,funds,bal_T)
+}
+clause constructor_next(deadline,target,owner,min_donation,funds,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call deposit(deadline,target,owner,min_donation,funds,bal_T)
+    afterAbs(deadline) : call finalize(deadline,target,owner,min_donation,funds,bal_T)
+}
+clause deposit_run(deadline,target,owner,min_donation,funds,bal_T; x,a) {
+  precond_wallet: bal_T+x:T
+  precond_if: x>=min_donation
+  process: 
+    call deposit_next(deadline,target,owner,min_donation,funds[a->(funds[a])+x],bal_T+x)
+}
+clause deposit_next(deadline,target,owner,min_donation,funds,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call deposit(deadline,target,owner,min_donation,funds,bal_T)
+    afterAbs(deadline) : call finalize(deadline,target,owner,min_donation,funds,bal_T)
+}
+clause finalize_run(deadline,target,owner,min_donation,funds,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call( Check(bal_T>=target) | Pay(owner,bal_T,T) | finalize_next(deadline,target,owner,min_donation,funds,0) )
+    call( Check(bal_T<target) | finalize_next(deadline,target,owner,min_donation,funds,bal_T) )
+}
+clause finalize_next(deadline,target,owner,min_donation,funds,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call withdraw(deadline,target,owner,min_donation,funds,bal_T)
+}
+clause withdraw_run(deadline,target,owner,min_donation,funds,bal_T; a) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call( Pay(a,funds[a],T) | withdraw_next(deadline,target,owner,min_donation,funds[a->0],bal_T-(funds[a])) )
+}
+clause withdraw_next(deadline,target,owner,min_donation,funds,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call withdraw(deadline,target,owner,min_donation,funds,bal_T)
+}
+clause Pay(a,v,t; ) {
+  precond_wallet: v:t
+  precond_if: true
+  process: 
+    send(v:t -> a)
+}
+clause Check(b; ) {
+  precond_wallet: 
+  precond_if: b
+  process: 
+    send()
+}
+

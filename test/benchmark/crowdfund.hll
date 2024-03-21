@@ -1,0 +1,29 @@
+contract Crowdfund {
+    uint deadline;                      // deadline for donations
+    uint target;                        // the campaign is successful is this target is reaches 
+    address owner;                      // beneficiary of the campaign
+    uint min_donation;                  // minimum donation
+    mapping (address => uint) funds;    // keeps track of the donations
+
+    constructor(uint d, uint t, address o, uint m) {
+        owner = o;
+        deadline = d; 
+        target = t;
+        min_donation = m;
+    } next(deposit,finalize)
+
+    function deposit(uint x, address a) input(x:T) {
+        require(x>=min_donation);
+       	funds[a] += x;
+    } next(deposit,finalize)
+
+    function finalize() after(deadline) {
+       	if (balance(T) >= target)
+         	owner.transfer(balance(T):T);
+    } next(withdraw)
+
+    function withdraw(address a) {
+       	a.transfer(funds[a]:T);
+       	funds[a] = 0;
+    } next(withdraw)
+}

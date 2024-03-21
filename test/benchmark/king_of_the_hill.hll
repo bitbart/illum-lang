@@ -1,0 +1,50 @@
+contract KingOfTheHill {
+    uint curse_duration;    // amount of time that passes between becoming king, and dying (immutable)
+    uint rate_percent;      // ratio at which the claim_price increases multiplied by 100 (immutable)
+    uint dethrone_fee;      // amount of T that users must pay to the contract owner to dethrone the king (immutable)
+    uint crown_fee;         // amount of T that users must pay to the contract owner when the old king dies (immutable)
+    uint claim_price;       // amount of T that users must pay to become king (immutable)
+    uint curse_start;       // when the curse was inflicted to the king
+    address owner;          // realm creator (takes the fees!)
+    address monarch;        // address of the current king 
+    string king_name;       // name of the current king
+    address time_oracle;    // time oracle service
+    uint curr_time;         // current time, as reported by the oracle
+
+    constructor(address a, uint cf, uint df, uint r, uint d, string k, address to) auth(a) {
+        crown_fee = cf;
+        dethrone_fee = df;
+        rate_percent = r;
+        curse_duration = d;
+        claim_price = cf;
+        owner = a;
+        monarch = a;
+        king_name = k;
+        time_oracle = to;
+    }
+
+    function set_time(uint time) auth(time_oracle) {
+        curr_time = time;
+    }
+
+    // a becomes king with a vacant throne
+    function crown(address a, string k) auth(a) input(x:T) {
+        require curr_time >= curse_start + curse_duration;
+        owner.transfer(crown_fee:T); 
+        claim_price = (crown_fee * rate_percent)/100;
+        curse_start = curr_time;
+        monarch = a;
+        king_name = k;
+    }
+
+    // a becomes king by killing the previous king
+    function dethrone(address a, string k) auth(a) {
+        require curr_time <= curse_start + curse_duration;
+        owner.transfer(dethrone_fee:T);
+        monarch.transfer(claim_price:T);
+        claim_price = (claim_price * rate_percent)/100; 
+        curse_start = curr_time;
+        monarch = a;
+        king_name = k;
+    }
+}

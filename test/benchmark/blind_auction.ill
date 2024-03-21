@@ -1,0 +1,86 @@
+clause constructor_run(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T; a,tbid,trev,trdm) {
+  precond_wallet: bal_NFT+1:NFT,bal_T:T
+  precond_if: tbid<trev && trev<trdm
+  process: 
+    call constructor_next(tbid,trev,trdm,0,winner,a,bids,deposit,bal_NFT+1,bal_T)
+}
+clause constructor_next(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T; ) {
+  precond_wallet: bal_NFT:NFT,bal_T:T
+  precond_if: true
+  process: 
+    call bid(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+    afterAbs(deadline_reveal) : call close(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+}
+clause bid_run(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T; a,x,sealed_bid) {
+  precond_wallet: bal_NFT:NFT,bal_T+x:T
+  precond_if: true
+  process: 
+    call bid_next(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids[a->sealed_bid],deposit[a->x],bal_NFT,bal_T+x)
+}
+clause bid_next(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T; ) {
+  precond_wallet: bal_NFT:NFT,bal_T:T
+  precond_if: true
+  process: 
+    call bid(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+    afterAbs(deadline_bid) : call reveal(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+    auth(winner) afterAbs(deadline_reveal) : call redeem(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+    afterAbs(deadline_reveal) : call close(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+}
+clause reveal_run(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T; a,bid) {
+  precond_wallet: bal_NFT:NFT,bal_T:T
+  precond_if: a_bid<=deposit[a]
+  process: 
+    call( Check(a_bid<=highest_bid) | Pay(a,deposit[a],T) | reveal_next(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit[a->0],bal_NFT,bal_T-(deposit[a])) )
+    call( Check(a_bid>highest_bid) | reveal_next(deadline_bid,deadline_reveal,deadline_redeem,a_bid_0,a,seller,bids,deposit,bal_NFT,bal_T) )
+}
+clause reveal_next(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T; ) {
+  precond_wallet: bal_NFT:NFT,bal_T:T
+  precond_if: true
+  process: 
+    afterAbs(deadline_bid) : call reveal(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+    auth(winner) afterAbs(deadline_reveal) : call redeem(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+    afterAbs(deadline_reveal) : call close(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+}
+clause redeem_run(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T; ) {
+  precond_wallet: bal_NFT:NFT,bal_T:T
+  precond_if: true
+  process: 
+    call( Pay(winner,(deposit[winner])-highest_bid,T) | Pay(winner,1,NFT) | redeem_next(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit[winner->0],bal_NFT-1,bal_T-((deposit[winner])-highest_bid)) )
+}
+clause redeem_next(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T; ) {
+  precond_wallet: bal_NFT:NFT,bal_T:T
+  precond_if: true
+  process: 
+    call bid(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+    afterAbs(deadline_bid) : call reveal(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+    auth(winner) afterAbs(deadline_reveal) : call redeem(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+    afterAbs(deadline_reveal) : call close(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+}
+clause close_run(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T; ) {
+  precond_wallet: bal_NFT:NFT,bal_T:T
+  precond_if: true
+  process: 
+    call( Pay(seller,highest_bid,T) | close_next(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T-highest_bid) )
+}
+clause close_next(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T; ) {
+  precond_wallet: bal_NFT:NFT,bal_T:T
+  precond_if: true
+  process: 
+    call bid(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+    afterAbs(deadline_bid) : call reveal(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+    auth(winner) afterAbs(deadline_reveal) : call redeem(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+    afterAbs(deadline_reveal) : call close(deadline_bid,deadline_reveal,deadline_redeem,highest_bid,winner,seller,bids,deposit,bal_NFT,bal_T)
+}
+clause Pay(a,v,t; ) {
+  precond_wallet: v:t
+  precond_if: true
+  process: 
+    send(v:t -> a)
+}
+clause Check(b; ) {
+  precond_wallet: 
+  precond_if: b
+  process: 
+    send()
+}
+

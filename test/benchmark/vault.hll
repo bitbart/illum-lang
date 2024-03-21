@@ -1,0 +1,39 @@
+contract Vault {
+    address owner;
+    address recovery;
+    uint wait_time;
+    address req_rcv;
+    uint req_time;
+    uint req_amt;
+    address time_oracle;
+    uint curr_time;
+    
+    constructor(address a, address r, address to, uint wt) auth(a) auth(r) {
+    	require(a != r);
+        owner = a;
+        recovery = r;
+        wait_time = wt;
+        time_oracle = to;
+    } next(set_time)
+
+    function set_time(uint time) auth(time_oracle) {
+        curr_time = time;
+    } next(receive,withdraw,set_time)
+
+    function receive(uint x) input(x:T) { 
+    } next(receive,withdraw,set_time)
+
+    function withdraw(address rcv, uint amt) auth(owner) {
+        require(amt <= balance(T));
+        req_time = curr_time;
+        req_amt = amt;
+        req_rcv = rcv;
+    } next(finalize,cancel)
+
+    function finalize() auth(owner) after(req_time + wait_time) {
+        req_rcv.transfer(req_amt:T);
+    } next(set_time)
+
+    function cancel() auth(recovery) {
+    } next(set_time)
+}

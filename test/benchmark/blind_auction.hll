@@ -1,0 +1,57 @@
+contract BlindAuction {
+    uint deadline_bid;      // end of the bidding period
+    uint deadline_reveal;   // end of the reveal period
+    uint deadline_redeem;   // end of the redeem period
+
+    uint highest_bid;
+    address winner;
+    address seller;
+
+    mapping (address => string) bids;   // sealed bids (SHA256 hashes)
+    mapping (address => uint) deposit;  // deposits of token T
+   
+    constructor(address a, uint tbid, uint trev, uint trdm) input(1:NFT) {
+        require (tbid < trev && trev < trdm);
+        seller = a;
+        highest_bid = 0;
+        deadline_bid = tbid;
+        deadline_reveal = trev;
+        deadline_redeem = trdm;
+    } next(bid,close)
+
+    function bid(address a, uint x, string sealed_bid) input(x:T) {
+        // require deposit[a]==0    // not strictly necessary
+        bids[a] = sealed_bid;
+        deposit[a] = x;
+    }
+    
+    function reveal(address a, string open_bid) after(deadline_bid) {
+        string s_bid;   // a's bid (string)
+        int a_bid;      // a's bid (int)
+        require sha256(open_bid) == bids[a];
+
+        s_bid = sub(open_bid,32,34);
+        a_bid = int_of_string(s_bid);
+
+        require a_bid <= deposit[a];
+    
+        if (a_bid <= highest_bid) { 
+            a.transfer(deposit[a]:T);   // non-winners take their deposit back
+            deposit[a] = 0;
+        }
+        else {
+            highest_bid = a_bid;
+            winner = a;
+        }
+    } next(reveal,redeem,close)
+
+    function redeem() auth(winner) after(deadline_reveal) {
+        winner.transfer(1:NFT);
+        winner.transfer((deposit[winner] - highest_bid):T); 
+        deposit[winner] = 0;
+    }
+
+    function close() after(deadline_reveal) {
+        seller.transfer(highest_bid:T);
+    }
+}

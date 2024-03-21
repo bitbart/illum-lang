@@ -1,0 +1,90 @@
+clause constructor_run(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T; a,r,to,wt,sig_r,sig_a) {
+  precond_wallet: bal_T:T
+  precond_if: a!=r && (versig(r,sig_r) && versig(a,sig_a))
+  process: 
+    call constructor_next(a,r,wt,req_rcv,req_time,req_amt,to,curr_time,bal_T)
+}
+clause constructor_next(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(time_oracle) : call set_time(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T)
+}
+clause set_time_run(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T; time) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call set_time_next(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,time,bal_T)
+}
+clause set_time_next(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(time_oracle) : call set_time(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T)
+    call receive(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T)
+    auth(owner) : call withdraw(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T)
+}
+clause receive_run(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T; x) {
+  precond_wallet: bal_T+x:T
+  precond_if: true
+  process: 
+    call receive_next(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T+x)
+}
+clause receive_next(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(time_oracle) : call set_time(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T)
+    call receive(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T)
+    auth(owner) : call withdraw(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T)
+}
+clause withdraw_run(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T; rcv,amt) {
+  precond_wallet: bal_T:T
+  precond_if: amt<=bal_T
+  process: 
+    call withdraw_next(owner,recovery,wait_time,rcv,curr_time,amt,time_oracle,curr_time,bal_T)
+}
+clause withdraw_next(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(owner) afterAbs(req_time+wait_time) : call finalize(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T)
+    auth(recovery) : call cancel(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T)
+}
+clause finalize_run(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call( Pay(req_rcv,req_amt,T) | finalize_next(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T-req_amt) )
+}
+clause finalize_next(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(time_oracle) : call set_time(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T)
+}
+clause cancel_run(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call cancel_next(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T)
+}
+clause cancel_next(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(time_oracle) : call set_time(owner,recovery,wait_time,req_rcv,req_time,req_amt,time_oracle,curr_time,bal_T)
+}
+clause Pay(a,v,t; ) {
+  precond_wallet: v:t
+  precond_if: true
+  process: 
+    send(v:t -> a)
+}
+clause Check(b; ) {
+  precond_wallet: 
+  precond_if: b
+  process: 
+    send()
+}
+

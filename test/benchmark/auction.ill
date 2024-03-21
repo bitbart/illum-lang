@@ -1,0 +1,52 @@
+clause constructor_run(deadline,min_bid,winner,seller,bal_T; a,d,m) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call constructor_next(d,m,winner,a,bal_T)
+}
+clause constructor_next(deadline,min_bid,winner,seller,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call bid(deadline,min_bid,winner,seller,bal_T)
+    auth(seller) afterAbs(deadline) : call close(deadline,min_bid,winner,seller,bal_T)
+}
+clause bid_run(deadline,min_bid,winner,seller,bal_T; v,a) {
+  precond_wallet: bal_T+v:T
+  precond_if: (v>=min_bid && (v>bal_T+v)) && a!=address(0)
+  process: 
+    call( Pay(winner,(bal_T+v)-v,T) | bid_next(deadline,min_bid,a,seller,(bal_T+v)-bal_T) )
+}
+clause bid_next(deadline,min_bid,winner,seller,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call bid(deadline,min_bid,winner,seller,bal_T)
+    auth(seller) afterAbs(deadline) : call close(deadline,min_bid,winner,seller,bal_T)
+}
+clause close_run(deadline,min_bid,winner,seller,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call( Pay(seller,bal_T,T) | close_next(deadline,min_bid,winner,seller,0) )
+}
+clause close_next(deadline,min_bid,winner,seller,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call bid(deadline,min_bid,winner,seller,bal_T)
+    auth(seller) afterAbs(deadline) : call close(deadline,min_bid,winner,seller,bal_T)
+}
+clause Pay(a,v,t; ) {
+  precond_wallet: v:t
+  precond_if: true
+  process: 
+    send(v:t -> a)
+}
+clause Check(b; ) {
+  precond_wallet: 
+  precond_if: b
+  process: 
+    send()
+}
+

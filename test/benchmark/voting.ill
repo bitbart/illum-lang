@@ -1,0 +1,91 @@
+clause constructor_run(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT; a,tc,tv) {
+  precond_wallet: bal_VT:VT,bal_WT+1:WT
+  precond_if: tc<tv
+  process: 
+    call constructor_next(a,tc,tv,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT+1)
+}
+clause constructor_next(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT; ) {
+  precond_wallet: bal_VT:VT,bal_WT:WT
+  precond_if: true
+  process: 
+    call candidate(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT)
+    afterAbs(candidate_end) : call start_vote(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT)
+}
+clause candidate_run(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT; a,sig_a) {
+  precond_wallet: bal_VT:VT,bal_WT:WT
+  precond_if: versig(a,sig_a)
+  process: 
+    call candidate_next(owner,candidate_end,vote_end,votes,is_candidate[a->true],winner,winner_votes,bal_VT,bal_WT)
+}
+clause candidate_next(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT; ) {
+  precond_wallet: bal_VT:VT,bal_WT:WT
+  precond_if: true
+  process: 
+    call candidate(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT)
+    afterAbs(candidate_end) : call start_vote(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT)
+}
+clause start_vote_run(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT; ) {
+  precond_wallet: bal_VT:VT,bal_WT:WT
+  precond_if: true
+  process: 
+    call start_vote_next(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT)
+}
+clause start_vote_next(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT; ) {
+  precond_wallet: bal_VT:VT,bal_WT:WT
+  precond_if: true
+  process: 
+    call vote(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT)
+    afterAbs(vote_end) : call win(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT)
+}
+clause vote_run(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT; a) {
+  precond_wallet: bal_VT+1:VT,bal_WT:WT
+  precond_if: is_candidate[a]
+  process: 
+    call( Check(votes[a->(votes[a])+1][a]>=winner_votes) | vote_next(owner,candidate_end,vote_end,votes[a->(votes[a])+1],is_candidate,a,votes[a->(votes[a])+1][a],bal_VT+1,bal_WT) )
+    call( Check(votes[a->(votes[a])+1][a]<winner_votes) | vote_next(owner,candidate_end,vote_end,votes[a->(votes[a])+1],is_candidate,winner,winner_votes,bal_VT+1,bal_WT) )
+}
+clause vote_next(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT; ) {
+  precond_wallet: bal_VT:VT,bal_WT:WT
+  precond_if: true
+  process: 
+    call vote(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT)
+    afterAbs(vote_end) : call win(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT)
+}
+clause win_run(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT; ) {
+  precond_wallet: bal_VT:VT,bal_WT:WT
+  precond_if: true
+  process: 
+    call( Check(winner!=address(0)) | Pay(owner,bal_VT,VT) | Pay(winner,1,WT) | win_next(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,0,bal_WT-1) )
+    call( Check(!(winner!=address(0))) | Pay(owner,bal_VT,VT) | win_next(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,0,bal_WT) )
+}
+clause win_next(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT; ) {
+  precond_wallet: bal_VT:VT,bal_WT:WT
+  precond_if: true
+  process: 
+    call end(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT)
+}
+clause end_run(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT; ) {
+  precond_wallet: bal_VT:VT,bal_WT:WT
+  precond_if: true
+  process: 
+    call end_next(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT)
+}
+clause end_next(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT; ) {
+  precond_wallet: bal_VT:VT,bal_WT:WT
+  precond_if: true
+  process: 
+    call end(owner,candidate_end,vote_end,votes,is_candidate,winner,winner_votes,bal_VT,bal_WT)
+}
+clause Pay(a,v,t; ) {
+  precond_wallet: v:t
+  precond_if: true
+  process: 
+    send(v:t -> a)
+}
+clause Check(b; ) {
+  precond_wallet: 
+  precond_if: b
+  process: 
+    send()
+}
+

@@ -1,0 +1,99 @@
+clause constructor_run(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; e,t1,t2,f) {
+  precond_wallet: bal_T:T
+  precond_if: t1<t2
+  process: 
+    call constructor_next(t1,t2,f,buyer,seller,e,bal_T)
+}
+clause constructor_next(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call join_buyer(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T)
+}
+clause join_buyer_run(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; a,b) {
+  precond_wallet: bal_T+x:T
+  precond_if: a!=b
+  process: 
+    call join_buyer_next(end_join,end_choice,feeRate,a,b,escrow,bal_T+x)
+}
+clause join_buyer_next(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(seller) : call join_seller(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T)
+    afterAbs(end_join) : call redeem_on_timeout(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T)
+}
+clause join_seller_run(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call join_seller_next(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T)
+}
+clause join_seller_next(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(seller,buyer) : call redeem_on_choice(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T)
+    auth(escrow) afterAbs(end_choice) : call arbitrate(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T)
+}
+clause redeem_on_choice_run(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; rcv) {
+  precond_wallet: bal_T:T
+  precond_if: rcv==buyer || rcv==seller
+  process: 
+    call( Pay(rcv,bal_T,T) | redeem_on_choice_next(end_join,end_choice,feeRate,buyer,seller,escrow,0) )
+}
+clause redeem_on_choice_next(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call end(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T)
+}
+clause redeem_on_timeout_run(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call( Pay(buyer,bal_T,T) | redeem_on_timeout_next(end_join,end_choice,feeRate,buyer,seller,escrow,0) )
+}
+clause redeem_on_timeout_next(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call end(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T)
+}
+clause arbitrate_run(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; rcv) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call( Pay(rcv,bal_T-((bal_T*feeRate)/100),T) | Pay(escrow,(bal_T*feeRate)/100,T) | arbitrate_next(end_join,end_choice,feeRate,buyer,seller,escrow,0) )
+}
+clause arbitrate_next(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call end(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T)
+}
+clause end_run(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call end_next(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T)
+}
+clause end_next(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call end(end_join,end_choice,feeRate,buyer,seller,escrow,bal_T)
+}
+clause Pay(a,v,t; ) {
+  precond_wallet: v:t
+  precond_if: true
+  process: 
+    send(v:t -> a)
+}
+clause Check(b; ) {
+  precond_wallet: 
+  precond_if: b
+  process: 
+    send()
+}
+

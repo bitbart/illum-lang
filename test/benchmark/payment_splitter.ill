@@ -1,0 +1,77 @@
+clause constructor_run(shares,totalShares,released,totalReleased,owner,bal_T; o) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call constructor_next(shares,totalShares,released,totalReleased,o,bal_T)
+}
+clause constructor_next(shares,totalShares,released,totalReleased,owner,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(owner) : call addShares(shares,totalShares,released,totalReleased,owner,bal_T)
+}
+clause addShares_run(shares,totalShares,released,totalReleased,owner,bal_T; p,s) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call addShares_next(shares[p->(shares[p])+s],totalShares+s,released,totalReleased,owner,bal_T)
+}
+clause addShares_next(shares,totalShares,released,totalReleased,owner,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    auth(owner) : call addShares(shares,totalShares,released,totalReleased,owner,bal_T)
+    auth(owner) : call finalizeShares(shares,totalShares,released,totalReleased,owner,bal_T)
+}
+clause finalizeShares_run(shares,totalShares,released,totalReleased,owner,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call finalizeShares_next(shares,totalShares,released,totalReleased,owner,bal_T)
+}
+clause finalizeShares_next(shares,totalShares,released,totalReleased,owner,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call receive(shares,totalShares,released,totalReleased,owner,bal_T)
+}
+clause receive_run(shares,totalShares,released,totalReleased,owner,bal_T; v) {
+  precond_wallet: bal_T+v:T
+  precond_if: true
+  process: 
+    call receive_next(shares,totalShares,released,totalReleased,owner,bal_T+v)
+}
+clause receive_next(shares,totalShares,released,totalReleased,owner,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call receive(shares,totalShares,released,totalReleased,owner,bal_T)
+    call release(shares,totalShares,released,totalReleased,owner,bal_T)
+}
+clause release_run(shares,totalShares,released,totalReleased,owner,bal_T; a) {
+  precond_wallet: bal_T:T
+  precond_if: shares[a]>0
+  process: 
+    call( Check((((bal_T+totalReleased)*(shares[a]))/totalShares)-(released[a])!=0) | Pay(a,(((bal_T+totalReleased)*(shares[a]))/totalShares)-(released[a]),T) | release_next(shares,totalShares,released[account_0->(released[account_0])+((((bal_T+totalReleased)*(shares[a]))/totalShares)-(released[a]))],totalReleased+((((bal_T+totalReleased)*(shares[a]))/totalShares)-(released[a])),owner,bal_T-((((bal_T+totalReleased)*(shares[a]))/totalShares)-(released[a]))) )
+    call( Check(!((((bal_T+totalReleased)*(shares[a]))/totalShares)-(released[a])!=0)) | release_next(shares,totalShares,released,totalReleased,owner,bal_T) )
+}
+clause release_next(shares,totalShares,released,totalReleased,owner,bal_T; ) {
+  precond_wallet: bal_T:T
+  precond_if: true
+  process: 
+    call receive(shares,totalShares,released,totalReleased,owner,bal_T)
+    call release(shares,totalShares,released,totalReleased,owner,bal_T)
+}
+clause Pay(a,v,t; ) {
+  precond_wallet: v:t
+  precond_if: true
+  process: 
+    send(v:t -> a)
+}
+clause Check(b; ) {
+  precond_wallet: 
+  precond_if: b
+  process: 
+    send()
+}
+
