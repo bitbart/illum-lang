@@ -1,3 +1,5 @@
+
+
 contract VestingWallet {
     uint released;
     address beneficiary;
@@ -35,8 +37,9 @@ contract VestingWallet {
     }
 
     function release() after(timestamp_reserve) {
-        uint amount;
+        int amount;
         amount = releasable(timestamp_reserve);
+        require(amount > 0);        // not strictly necessary (already enforced by transfer)
         released += amount;
         beneficiary.transfer(amount:T);
     }

@@ -18,6 +18,8 @@ type transaction = {
   timestamp: int;                       (* timestamp *) 
 }
 
+(* FIXME: tx to increase block number*)
+
 type wallet = (tok * int) list
 
 type cstate = {                         (* contract state *)

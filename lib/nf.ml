@@ -10,7 +10,6 @@ open Typecheck
 let rec cmdNF_of_cmd = function
 | Skip -> []
 | VarAssign(x,e) -> [VarAssignNF(x,e)]
-(* | MapAssign(x,e1,e2) -> [MapAssignNF(x,e1,e2)] *)
 | Xfer(x,e,t) -> [XferNF(x,e,t)]
 | Req(e) -> [ReqNF(e)]
 | If(e,c1,c2) -> let c1' = cmdNF_of_cmd c1 in 

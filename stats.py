@@ -12,7 +12,7 @@ def count_lines(file_path):
     """Count the number of lines in a file."""
     with open(file_path, 'r', encoding='utf-8') as file:
         return sum(1 for line in file)
-
+    
 def illum_size(file_path):
     """Get the size of the compiled file."""
     try:
@@ -21,7 +21,7 @@ def illum_size(file_path):
         return sum(1 for _ in output.splitlines()), len(output)
  
     except subprocess.CalledProcessError:
-        return -1
+        return -1,-1
 
 def main(folder_path, extension):
     """Scan files in a folder with a given extension and output a CSV with file names and their line counts."""

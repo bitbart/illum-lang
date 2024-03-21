@@ -1,9 +1,9 @@
 contract Voting {
     address owner;
-    uint candidate_end;
-    uint vote_end;
-    mapping (address => uint) votes;
-    mapping (address => bool) is_candidate;
+    uint candidate_end;                     // end of the candidation phase
+    uint vote_end;                          // end of the voting phase
+    mapping (address => uint) votes;        // count of votes per candidate
+    mapping (address => bool) is_candidate; // tells if an address is candidate
     address winner;
     uint winner_votes;
 
@@ -17,7 +17,7 @@ contract Voting {
 
     function candidate(address a) auth(a) {
         is_candidate[a] = true;
-    }
+    } next(candidate,start_vote)
 
     function start_vote() after(candidate_end) {
     } next(vote,win)
